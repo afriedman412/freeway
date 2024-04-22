@@ -1,24 +1,43 @@
-import requests
-from flask import render_template, session
 import os
 from time import sleep
+
 import pandas as pd
+import requests
+from flask import render_template, session
+
 from .logger import logger
 
+GOV_BASE_URL = "https://api.open.fec.gov/v1/"
 CYCLE = "2024"
 BASE_URL = f"https://api.propublica.org/campaign-finance/v1/{CYCLE}"
 RECURSIVE_SLEEP_TIME = 1
 RETRY_SLEEP_TIME = 3
 RETRIES = 5
 
-def qry(url: str, offset: int=0) -> requests.Response:
+
+"""
+curl -X 'GET' \
+  'https://api.open.fec.gov/v1/candidates/search/?page=1&per_page=20&q=tester&sort=name&sort_hide_null=false&sort_null_only=false&sort_nulls_last=false&api_key=DEMO_KEY' \
+  -H 'accept: application/json'
+"""
+
+
+def qry(url: str, endpoint: str = 'p', offset: int = 0) -> requests.Response:
     logger.debug(f"querying {url}")
+    headers = {}
+    params = {'offset': offset}
+    assert endpoint in 'pg'
+    if endpoint == 'p':
+        headers['X-API-Key'] = os.environ['PRO_PUBLICA_API_KEY']
+    if endpoint == 'g':
+        params['api_key'] = os.environ['GOV_API_KEY']
+
     r = requests.get(
-            url=url,
-            timeout=30,
-            headers={"X-API-Key": os.environ['PRO_PUBLICA_API_KEY']},
-            params={'offset': offset}
-        )
+        url=url,
+        timeout=30,
+        headers=headers,
+        params=params
+    )
     logger.debug(f"status: {r.status_code}")
     return r
 
@@ -40,10 +59,11 @@ def recursive_query(url: str):
                 else:
                     break
             except requests.exceptions.JSONDecodeError:
-                logger.debug(f"JSONDecodeError ... retrying in {RETRY_SLEEP_TIME}")
+                logger.debug(f"JSONDecodeError ... retrying in {
+                             RETRY_SLEEP_TIME}")
                 sleep(RETRY_SLEEP_TIME)
                 counter += 1
-            
+
         else:
             raise Exception(", ".join(
                 [
@@ -65,3 +85,10 @@ def load_results(url, params):
         )
     except Exception as e:
         return f"Error: {e}"
+
+
+def verify_r(r: requests.Response):
+    assert r.status_code == 200, f"bad status code: {r.status_code}"
+    assert r.json(), "bad response json"
+    assert r.json()['results'], "no results loaded"
+    return len(r.json()['results'])

@@ -1,0 +1,20 @@
+{
+    "committees": [
+        {
+            "name": "Senate Leadership Fund",
+            "id": "C00571703"
+        },
+        {
+            "name": "Congressional Leadership Fund",
+            "id": "C00504530"
+        },
+        {
+            "name": "Club for Growth",
+            "id": "C90009945"
+        },
+        {
+            "name": "Americans for Prosperity",
+            "id": "C90013285"
+        }
+    ]
+}

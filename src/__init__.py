@@ -1,6 +1,8 @@
-from flask import Flask, render_template
-from .routes import api_routes
 import os
+
+from flask import Flask, render_template
+
+from .routes import api_routes
 
 
 def generate_app() -> Flask:
@@ -12,8 +14,10 @@ def generate_app() -> Flask:
     app.secret_key = 'p33p33p00p00'
     return app
 
+
 app = generate_app()
 app.register_blueprint(api_routes)
+
 
 @app.route('/', methods=['GET'])
 def get_routes() -> str:
