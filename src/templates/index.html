@@ -15,7 +15,11 @@
         </header>
         <div class="the-body">
             {% for k, v in params.items() %}
+            {% if k == 'title' %}
+            <h2>{{ v }}</h2>
+            {% else %}
             <h2>{{ k }}: {{ v }}</h2>
+            {% endif %}
             {% endfor %}
             <table class="data">
                 <tbody>

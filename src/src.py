@@ -1,25 +1,16 @@
 import os
 from time import sleep
+import gzip
+import base64
+import json
 
 import pandas as pd
 import requests
 from flask import render_template, session
 
 from .logger import logger
-
-GOV_BASE_URL = "https://api.open.fec.gov/v1/"
-CYCLE = "2024"
-BASE_URL = f"https://api.propublica.org/campaign-finance/v1/{CYCLE}"
-RECURSIVE_SLEEP_TIME = 1
-RETRY_SLEEP_TIME = 3
-RETRIES = 5
-
-
-"""
-curl -X 'GET' \
-  'https://api.open.fec.gov/v1/candidates/search/?page=1&per_page=20&q=tester&sort=name&sort_hide_null=false&sort_null_only=false&sort_nulls_last=false&api_key=DEMO_KEY' \
-  -H 'accept: application/json'
-"""
+from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME
+from typing import Callable
 
 
 def qry(url: str, endpoint: str = 'p', offset: int = 0) -> requests.Response:
@@ -42,7 +33,7 @@ def qry(url: str, endpoint: str = 'p', offset: int = 0) -> requests.Response:
     return r
 
 
-def recursive_query(url: str):
+def recursive_query(url: str, limit: int=None, filter: Callable=None):
     bucket = []
     offset = 0
     counter = 0
@@ -53,14 +44,20 @@ def recursive_query(url: str):
             try:
                 transactions = r.json().get('results')
                 if transactions:
+                    if filter:
+                        if not filter(transactions):
+                            break
+                        else:
+                            transactions = filter(transactions)
                     bucket += transactions
+                    if limit and len(bucket) > limit:
+                        break
                     offset += 20
                     sleep(RECURSIVE_SLEEP_TIME)
                 else:
                     break
             except requests.exceptions.JSONDecodeError:
-                logger.debug(f"JSONDecodeError ... retrying in {
-                             RETRY_SLEEP_TIME}")
+                logger.debug(f"JSONDecodeError ... retrying in {RETRY_SLEEP_TIME}")
                 sleep(RETRY_SLEEP_TIME)
                 counter += 1
 
@@ -75,13 +72,14 @@ def recursive_query(url: str):
     return bucket
 
 
-def load_results(url, params):
-    session['current_data'] = recursive_query(url)
+def load_results(url: str, title_params: dict={}, limit: str=None):
+    data = recursive_query(url, limit)
+    save_data(data)
     try:
         return render_template(
             "index.html",
-            df_html=pd.DataFrame(session['current_data']).to_html(),
-            params=params
+            df_html=pd.DataFrame(data).to_html(),
+            params=title_params
         )
     except Exception as e:
         return f"Error: {e}"
@@ -92,3 +90,20 @@ def verify_r(r: requests.Response):
     assert r.json(), "bad response json"
     assert r.json()['results'], "no results loaded"
     return len(r.json()['results'])
+
+
+def save_data(data):
+    """
+    Too much data = can't save
+
+    Still has a limit, but that's for later.
+    """
+    compressed_data = gzip.compress(json.dumps(data).encode('utf-8'))
+    encoded_data = base64.b64encode(compressed_data)
+    session['current_data'] = encoded_data
+
+
+def decompress_data(data):
+    compressed_data = base64.b64decode(data.decode("utf-8"))
+    decompressed_data = gzip.decompress(compressed_data)
+    return json.loads(decompressed_data.decode('utf-8'))

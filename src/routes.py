@@ -1,9 +1,13 @@
 import pandas as pd
-from flask import Blueprint, Response, session
+from flask import Blueprint, Response, session, render_template
 import os
 import requests
+import pytz
+from datetime import datetime as dt
+from datetime import timedelta
 
-from .src import BASE_URL, GOV_BASE_URL, load_results, qry
+from .src import load_results, qry, recursive_query, save_data, decompress_data
+from .config import BASE_URL, GOV_BASE_URL, DT_FORMAT
 from .logger import logger
 
 api_routes = Blueprint("api_routes", __name__)
@@ -12,13 +16,40 @@ api_routes = Blueprint("api_routes", __name__)
 @api_routes.route("/gov/<etc>")
 def gov_api_shortcut(etc: str):
     """
-    for testing fec.gov endpoints
+    for testing fec.gov endpoints... doesn't work!
     """
     url = os.path.join(GOV_BASE_URL, etc)
     print(url)
     logger.debug(url)
     r = qry(url, endpoint='g')
     return r.json()
+
+
+@api_routes.route("/late")
+@api_routes.route("/late/<date_cutoff>")
+def get_late_contributions(date_cutoff: str=None):
+    url = os.path.join(BASE_URL, "contributions/48hour.json")
+    if not date_cutoff:
+        tz = pytz.timezone('America/New_York')
+        today = dt.now().astimezone(tz)
+        date_cutoff = (today - timedelta(2)).strftime(DT_FORMAT)
+    else:
+        date_cutoff = dt.strptime(date_cutoff, DT_FORMAT).strftime(DT_FORMAT)
+    data = recursive_query(
+        url, 
+        filter=lambda transactions: [
+            t for t in transactions 
+            if t['contribution_date'] > date_cutoff
+            and t['cycle'] == 2024
+            and t['entity_type'] == "PAC"
+            ]
+        )
+    save_data(data)
+    return render_template(
+            "index.html",
+            df_html=pd.DataFrame(data).to_html(),
+            params={"title": f"Late Contributions up to {date_cutoff}"}
+        )
 
 
 @api_routes.route('/committee/<committee_id>')
@@ -66,7 +97,7 @@ def download_current_data():
     """
     download most recently loaded data
     """
-    current_data = session['current_data']
+    current_data = decompress_data(session['current_data'])
     return Response(
         pd.DataFrame(current_data).to_csv(index=False),
         mimetype="text/csv",
@@ -74,3 +105,13 @@ def download_current_data():
             "Content-disposition":
             "attachment; filename={}".format("download.csv")
         })
+
+
+@api_routes.route("/data")
+def show_currrent_data():
+    current_data = decompress_data(session['current_data'])
+    return render_template(
+            "index.html",
+            df_html=pd.DataFrame(current_data).to_html(),
+            params={"title": f"Current Data"}
+        )
