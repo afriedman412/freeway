@@ -36,7 +36,10 @@ for n, c in enumerate(companies[offset:], start=offset):
         try:
             results = r.json().get('results')
             if results:
-                donors = list(set([(c, r_['contributor_name'], r_['contributor_id']) for r_ in results]))
+                donors = list(set([(
+                    c, r_['contributor_name'],
+                    r_['contributor_id']
+                    ) for r_ in results]))
                 print(len(donors))
                 with open("fossil_fuel_ids.csv", "a+") as f:
                     for d in donors:

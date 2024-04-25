@@ -13,12 +13,16 @@ from .logger import logger
 api_routes = Blueprint("api_routes", __name__)
 
 
-@api_routes.route("/gov/<etc>")
-def gov_api_shortcut(etc: str):
+@api_routes.route("/schedule_a/<comittee_id>")
+def get_schedule_a(comittee_id: str):
     """
-    for testing fec.gov endpoints... doesn't work!
+    schedule a: money to PACs)
     """
-    url = os.path.join(GOV_BASE_URL, etc)
+    # https://api.open.fec.gov/v1/schedules/schedule_a/
+    url = os.path.join(
+        GOV_BASE_URL,
+        "schedules",
+        f"schedule_a?committee_id={comittee_id}")
     print(url)
     logger.debug(url)
     r = qry(url, endpoint='g')
@@ -27,16 +31,16 @@ def gov_api_shortcut(etc: str):
 
 @api_routes.route("/late")
 @api_routes.route("/late/<date_cutoff>")
-def get_late_contributions(date_cutoff: str=None):
+def get_late_contributions(date_cutoff: str = None):
     url = os.path.join(BASE_URL, "contributions/48hour.json")
     if not date_cutoff:
         tz = pytz.timezone('America/New_York')
         today = dt.now().astimezone(tz)
-        date_cutoff = (today - timedelta(2)).strftime(DT_FORMAT)
+        date_cutoff = (today - timedelta(4)).strftime(DT_FORMAT)
     else:
         date_cutoff = dt.strptime(date_cutoff, DT_FORMAT).strftime(DT_FORMAT)
     data = recursive_query(
-        url, 
+        url,
         filter=lambda transactions: [
             t for t in transactions 
             if t['contribution_date'] > date_cutoff
@@ -69,6 +73,12 @@ def load_committee_filings(committee_id: str):
     """
     url = "/".join([BASE_URL, 'committees', committee_id, 'filings.json'])
     return load_results(url, {'committee_id': committee_id})
+
+
+@api_routes.route("/committee/search/<query>")
+def search_committees(query: str):
+    url = "/".join([BASE_URL, 'committees', f'search.json?query={query}'])
+    return load_results(url, {'query': query})
 
 
 @api_routes.route('/ie/date/<date>')
@@ -113,5 +123,5 @@ def show_currrent_data():
     return render_template(
             "index.html",
             df_html=pd.DataFrame(current_data).to_html(),
-            params={"title": f"Current Data"}
+            params={"title": "Current Data"}
         )
