@@ -1,5 +1,5 @@
 .zip
-.csv
+*.csv
 *-key.json
 nba-2019-2020-5cc03a383d9f.json
 this_will_fail
