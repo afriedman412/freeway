@@ -1,11 +1,16 @@
 Committees:
   - name: Club For Growth
     id: C90009945
+  - name: Club For Growth PAC
+    id: C00432260
+  - name: Club For Growth Action
+    id: C00487470
   - name: Congressional Leadership Fund
     id: C00504530
   - name: Senate Leadership Fund
     id: C00571703
   - name: Americans for Prosperity
     id: C90013285
-Candidates:
-  - 
+Candidate:
+  - name: 
+    id: 

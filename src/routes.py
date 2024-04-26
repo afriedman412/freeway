@@ -1,7 +1,6 @@
 import pandas as pd
 from flask import Blueprint, Response, session, render_template
 import os
-import requests
 import pytz
 from datetime import datetime as dt
 from datetime import timedelta
