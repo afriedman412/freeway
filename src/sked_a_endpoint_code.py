@@ -1,12 +1,12 @@
 """
 Raw code to get all committee receipts for a cycle for a given committee. Adapt this into a reqular query to track donations to target committees.
-
-"all_sked_a_scrapes_42624.csv" is the most recent data as of that date!
 """
 import requests
 import os 
 from time import sleep
-
+import yaml
+from .src import make_conn
+import pandas as pd
 
 def committee_sked_a_scrape(committee_id):
     url = "https://api.open.fec.gov/v1/schedules/schedule_a"
@@ -50,7 +50,7 @@ def flatten_dicto(dicto, prefix):
             new_dicto[k] = v
     return new_dicto
 
-def format_results(results):
+def format_results(results, update_dict: dict=None):
     new_results = []
     for j in results:
         for r in j:
@@ -60,14 +60,50 @@ def format_results(results):
                     new_r.update(flatten_dicto(v, k))
                 else:
                     new_r[k] = v
+            if update_dict:
+                new_r.update(update_dict)
             new_results.append(new_r)
     return new_results
 
 
-def full_scrape(committee_id):
+def full_scrape(committee_id, update_dict: dict=None):
     results = committee_sked_a_scrape(committee_id)
     if not results:
-        raise Exception("no results returned!")
-    new_results = format_results(results)
+        print("no results returned!")
+        return []
+    new_results = format_results(results, update_dict)
     print(len(new_results))
     return new_results
+
+
+def scrape_all_committees(committee_data):
+    output = []
+    for c in committee_data['Committees']:
+        print(c)
+        results = full_scrape(c['id'], {
+            'query_committee_id': c['id'],
+            'query_committee_name': c['name']
+        })
+        if results:
+            output += results
+        continue
+    return output
+
+
+def load_sked_a():
+    """
+    Data pull from data.yaml should probably be broken out elsehwere!
+    """
+    with open("src/data.yaml") as f:
+        data = yaml.safe_load(f)
+
+    # formatting here is annoying too, can prob do better
+    q = f"""
+        SELECT * FROM fec_sked_a
+        WHERE contributor_id IN (
+        {",".join([f"'{d['id']}'" for d in data['Donors']])}
+        )"""
+    
+    conn = make_conn()
+    donor_data = pd.read_sql(q, conn)
+    return donor_data

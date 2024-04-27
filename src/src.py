@@ -7,6 +7,8 @@ import json
 import pandas as pd
 import requests
 from flask import render_template, session
+from sqlalchemy.engine.base import Engine
+from sqlalchemy import create_engine
 
 from .logger import logger
 from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME
@@ -107,3 +109,15 @@ def decompress_data(data):
     compressed_data = base64.b64decode(data.decode("utf-8"))
     decompressed_data = gzip.decompress(compressed_data)
     return json.loads(decompressed_data.decode('utf-8'))
+
+
+def make_conn() -> Engine:
+    sql_string = "mysql://{}:{}@{}/{}".format(
+        "o1yiw20hxluaaf9p",
+        os.getenv('MYSQL_PW'),
+        "phtfaw4p6a970uc0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
+        "izeloqfyy070up9b"
+    )
+    engine = create_engine(sql_string)
+    return engine
+
