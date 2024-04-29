@@ -4,8 +4,7 @@ Raw code to get all committee receipts for a cycle for a given committee. Adapt 
 import requests
 import os 
 from time import sleep
-import yaml
-from .src import make_conn
+from .src import make_conn, DATA
 import pandas as pd
 
 def committee_sked_a_scrape(committee_id):
@@ -90,20 +89,34 @@ def scrape_all_committees(committee_data):
     return output
 
 
-def load_sked_a():
-    """
-    Data pull from data.yaml should probably be broken out elsehwere!
-    """
-    with open("src/data.yaml") as f:
-        data = yaml.safe_load(f)
-
-    # formatting here is annoying too, can prob do better
+def get_pac_contributions_to_candidates():
     q = f"""
-        SELECT * FROM fec_sked_a
-        WHERE contributor_id IN (
-        {",".join([f"'{d['id']}'" for d in data['Donors']])}
-        )"""
-    
+    SELECT fec_committee_id, fec_committee_name, fec_candidate_id, fec_candidate_name, sum(amount), count(*) 
+    FROM fiu_pp
+    WHERE fec_candidate_id IN (
+    {",".join([f"'{d['id']}'" for d in DATA['Candidates']])}
+    ) AND fec_committee_id IN (
+        {",".join([f"'{d['id']}'" for d in DATA['Committees']])}
+    )
+    GROUP BY fec_committee_id, fec_candidate_id
+    """
     conn = make_conn()
-    donor_data = pd.read_sql(q, conn)
-    return donor_data
+    pac_contributions  = pd.read_sql(q, conn)
+    return pac_contributions
+
+
+def get_topic_donors_by_pac(topic):
+    q = f"""
+        SELECT query_committee_id, query_committee_name, sum(contribution_receipt_amount), count(*)
+        FROM donor_sked_a
+        WHERE contributor_id IN (
+            {",".join([f"'{d['id']}'" for d in DATA['Donors']['topic']])}
+            )
+        GROUP BY query_committee_id;
+        """
+    conn = make_conn()
+    topic_donors_by_pac = pd.read_sql(q, conn)
+    return topic_donors_by_pac
+    
+
+    

@@ -35,13 +35,16 @@ pure-eval==0.2.2
 Pygments==2.17.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
+python-http-client==3.3.7
 pytz==2024.1
 PyYAML==6.0.1
 pyzmq==26.0.2
 requests==2.31.0
+sendgrid==6.11.0
 six==1.16.0
 SQLAlchemy==2.0.29
 stack-data==0.6.3
+starkbank-ecdsa==2.2.0
 tornado==6.4
 traitlets==5.14.3
 typing_extensions==4.11.0

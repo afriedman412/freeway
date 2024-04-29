@@ -1,15 +1,28 @@
 import pandas as pd
-from flask import Blueprint, Response, session, render_template
+from flask import Blueprint, Response, session, render_template, request
 import os
 import pytz
 from datetime import datetime as dt
 from datetime import timedelta
 
-from .src import load_results, qry, recursive_query, save_data, decompress_data
+from .src import load_results, qry, recursive_query, save_data, decompress_data, update_daily_transactions
 from .config import BASE_URL, GOV_BASE_URL, DT_FORMAT
 from .logger import logger
 
 api_routes = Blueprint("api_routes", __name__)
+
+
+@api_routes.route("/update_ie", methods=['POST'])
+def update_ies():
+    """
+    There isn't a good reason to put this behind a password but like why not.
+    """
+    if request.form.get("password") == 'd00d00':
+        email_trigger = request.form.get('send_email', False)
+        new_transactions_df = update_daily_transactions(send_email=email_trigger)
+        return new_transactions_df.to_json()
+    else:
+        "bad password!"
 
 
 @api_routes.route("/schedule_a/<comittee_id>")

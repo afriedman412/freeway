@@ -7,54 +7,56 @@ import json
 import pandas as pd
 import requests
 from flask import render_template, session
-from sqlalchemy.engine.base import Engine
-from sqlalchemy import create_engine
 
 from .logger import logger
-from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME
-from typing import Callable
+from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME, BASE_URL, IE_TABLE, DATA_COLUMNS
+from .utilities import load_data, query_api, get_today, query_table, make_conn, send_email
+from typing import Callable, List, Dict, Any
 
 
-def qry(url: str, endpoint: str = 'p', offset: int = 0) -> requests.Response:
-    logger.debug(f"querying {url}")
-    headers = {}
-    params = {'offset': offset}
-    assert endpoint in 'pg'
-    if endpoint == 'p':
-        headers['X-API-Key'] = os.environ['PRO_PUBLICA_API_KEY']
-    if endpoint == 'g':
-        params['api_key'] = os.environ['GOV_API_KEY']
 
-    r = requests.get(
-        url=url,
-        timeout=30,
-        headers=headers,
-        params=params
-    )
-    logger.debug(f"status: {r.status_code}")
-    return r
+DATA = load_data()
 
 
-def recursive_query(url: str, limit: int=None, filter: Callable=None):
+def recursive_query(
+        url: str, 
+        increment: int = 20, 
+        api_type: str = 'p',
+        limit: int = None, 
+        filter: Callable = None
+        ):
+    """
+    Queries `url`, offsetting by `increment` every time, until no results or `limit` results.
+
+    INPUTS:
+        url (str): endpoint for the Pro Publica or FEC API
+        increment (int): number of results to return per page (passed to API)
+        api_type (str): 'p' for Pro Publica, 'g' for FEC ... changes behavior and auth
+        limit (int): if provided, break the loop and return results when total results passes limit
+        filter (callable): function to filter query results by
+
+    OUTPUT:
+        bucket (list): accumulated query results
+    """
     bucket = []
     offset = 0
     counter = 0
     while True:
         logger.debug(f"offset: {offset}")
-        r = qry(url, offset=offset)
+        r = query_api(url, offset=offset, api_type=api_type, per_page=increment)
         if r.status_code == 200:
             try:
-                transactions = r.json().get('results')
-                if transactions:
+                results = r.json().get('results')
+                if results:
                     if filter:
-                        if not filter(transactions):
+                        if not filter(results):
                             break
                         else:
-                            transactions = filter(transactions)
-                    bucket += transactions
+                            results = filter(results)
+                    bucket += results
                     if limit and len(bucket) > limit:
                         break
-                    offset += 20
+                    offset += increment
                     sleep(RECURSIVE_SLEEP_TIME)
                 else:
                     break
@@ -75,7 +77,7 @@ def recursive_query(url: str, limit: int=None, filter: Callable=None):
 
 
 def load_results(url: str, title_params: dict={}, limit: str=None):
-    data = recursive_query(url, limit)
+    data = recursive_query(url, limit=limit)
     save_data(data)
     try:
         return render_template(
@@ -111,13 +113,43 @@ def decompress_data(data):
     return json.loads(decompressed_data.decode('utf-8'))
 
 
-def make_conn() -> Engine:
-    sql_string = "mysql://{}:{}@{}/{}".format(
-        "o1yiw20hxluaaf9p",
-        os.getenv('MYSQL_PW'),
-        "phtfaw4p6a970uc0.cbetxkdyhwsb.us-east-1.rds.amazonaws.com",
-        "izeloqfyy070up9b"
-    )
-    engine = create_engine(sql_string)
-    return engine
+def update_daily_transactions(date: str = None, send_email: bool = True) -> List[Dict[str, Any]]:
+    """
+    Gets independent expenditures for provided date. Default is today by EST.
+    (Loaded with get_today())
 
+
+
+    Input:
+        date (str): date in DT_FORMAT format or None
+
+    Output:
+        output (list): list of transactions
+    """
+    url = os.path.join(BASE_URL, "independent_expenditures/{}/{}/{}.json")
+
+    if not date:
+        date = get_today()
+    # if not re.search(DT_FORMAT, date):
+    #     # this should error out to the 500 endpoint
+    #     date = parse(date).strftime(DT_FORMAT)
+    existing_ids = [
+        i[0]
+        for i in
+        query_table(
+            f"select distinct unique_id from {IE_TABLE}"
+        )]
+    def filter_on_ids(results):
+        return [r for r in results if r['unique_id'] not in existing_ids]
+
+    url = url.format(*date.split("-"))
+    new_today_transactions = recursive_query(url, filter=filter_on_ids)
+    new_today_transactions_df = pd.DataFrame(new_today_transactions)
+    engine = make_conn()
+    new_today_transactions_df.to_sql(IE_TABLE, con=engine, if_exists="append")
+    if send_email:
+            send_email(
+                f"New Independent Expenditures for {os.getenv('TODAY', 'error')}!",
+                new_today_transactions_df[DATA_COLUMNS].to_html()
+            )
+    return new_today_transactions_df
