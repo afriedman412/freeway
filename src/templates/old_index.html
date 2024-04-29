@@ -14,18 +14,13 @@
             </a>
         </header>
         <div class="the-body">
-            <img width="300px"
-                src="{{ url_for('static', filename='images/Thundercracker1_1223717253.gif') }}">
-            <h3><a href="/committee">Click here to search by committee
-                    ID.</a></h3>
-            {% if message %}
-            <h2>{{ message }}></h2>
-            {% endif %}
-            {% if returned_transactions %}
-            <h2><p style="color: red;">{{ ie_message }}</p></h2>
+            {% for k, v in params.items() %}
+            {% if k == 'title' %}
+            <h2>{{ v }}</h2>
             {% else %}
-            <h2><p style="color: brown;">{{ ie_message }}</p></h2>
+            <h2>{{ k }}: {{ v }}</h2>
             {% endif %}
+            {% endfor %}
             <table class="data">
                 <tbody>
                     {{ df_html|safe }}

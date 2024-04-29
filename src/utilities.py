@@ -16,6 +16,11 @@ from sendgrid.helpers.mail import Mail
 
 
 def load_data():
+    """
+    Gets donor, committee and candidate info from YAML file.
+
+    Probably better ways/places to store this, but this is fine for now.
+    """
     with open("src/data.yaml") as f:
         data = yaml.safe_load(f)
     return data
@@ -41,7 +46,7 @@ def make_conn() -> Engine:
 
 def query_table(q: str) -> List[Tuple]:
     """
-    Implement dict cursor!
+    TODO: Implement dict cursor!
     """
     engine = make_conn()
     with engine.connect() as conn:
@@ -52,6 +57,16 @@ def query_table(q: str) -> List[Tuple]:
 
 
 def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20) -> requests.Response:
+    """
+    Get data from the Pro Publica or FEC APIs.
+
+    INPUTS:
+        url (str): endpoint to query
+        api_type (str): 'p' for Pro Publica, 'g' for FEC ("government") ... sets auth and pagination
+        (check for any large-scale pagination FEC queries because pagination is different)
+        offset (int): retrives entries starting here
+        per_page (int): return this many entries (FEC API only -- PP is set to 20)
+    """
     logger.debug(f"querying {url}")
     headers = {}
     params = {'offset': offset}

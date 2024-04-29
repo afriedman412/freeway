@@ -1,8 +1,9 @@
 import os
 
-from flask import Flask, render_template
+from flask import Flask, render_template, url_for
 
-from .routes import api_routes
+from .routes import main_routes
+from .api_routes import api_routes
 
 
 def generate_app() -> Flask:
@@ -16,17 +17,6 @@ def generate_app() -> Flask:
 
 
 app = generate_app()
-app.register_blueprint(api_routes)
+for routes in [main_routes, api_routes]:
+    app.register_blueprint(routes)
 
-
-@app.route('/', methods=['GET'])
-def get_routes() -> str:
-    # Create available routes UI on home page.
-    routes = []
-    for rule in app.url_map.iter_rules():
-        routes.append({
-            "endpoint": rule.endpoint,
-            "methods": list(rule.methods),
-            "url": str(rule)
-        })
-    return render_template('routes.html', routes=routes)

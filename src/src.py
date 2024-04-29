@@ -1,15 +1,15 @@
 import os
 from time import sleep
-import gzip
-import base64
-import json
 
 import pandas as pd
 import requests
-from flask import render_template, session
+from flask import render_template
+import pytz
+from datetime import timedelta
+from datetime import datetime as dt
 
 from .logger import logger
-from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME, BASE_URL, IE_TABLE, DATA_COLUMNS
+from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME, BASE_URL, IE_TABLE, DATA_COLUMNS, DT_FORMAT
 from .utilities import load_data, query_api, get_today, query_table, make_conn, send_email
 from typing import Callable, List, Dict, Any
 
@@ -78,7 +78,7 @@ def recursive_query(
 
 def load_results(url: str, title_params: dict={}, limit: str=None):
     data = recursive_query(url, limit=limit)
-    save_data(data)
+    save_data(pd.DataFrame(data))
     try:
         return render_template(
             "index.html",
@@ -96,21 +96,33 @@ def verify_r(r: requests.Response):
     return len(r.json()['results'])
 
 
-def save_data(data):
+def save_data(data: pd.DataFrame):
+    conn = make_conn()
+    data.to_sql("temp", conn, if_exists='replace')
+    return
+
+
+def get_late_contributions(date_cutoff: str = None):
     """
-    Too much data = can't save
-
-    Still has a limit, but that's for later.
+    Get 24/48 hour contributions from PP api.
     """
-    compressed_data = gzip.compress(json.dumps(data).encode('utf-8'))
-    encoded_data = base64.b64encode(compressed_data)
-    session['current_data'] = encoded_data
-
-
-def decompress_data(data):
-    compressed_data = base64.b64decode(data.decode("utf-8"))
-    decompressed_data = gzip.decompress(compressed_data)
-    return json.loads(decompressed_data.decode('utf-8'))
+    url = os.path.join(BASE_URL, "contributions/48hour.json")
+    if not date_cutoff:
+        tz = pytz.timezone('America/New_York')
+        today = dt.now().astimezone(tz)
+        date_cutoff = (today - timedelta(4)).strftime(DT_FORMAT)
+    else:
+        date_cutoff = dt.strptime(date_cutoff, DT_FORMAT).strftime(DT_FORMAT)
+    data = recursive_query(
+        url,
+        filter=lambda transactions: [
+            t for t in transactions 
+            if t['contribution_date'] > date_cutoff
+            and t['cycle'] == 2024
+            and t['entity_type'] == "PAC"
+            ]
+        )
+    return data
 
 
 def update_daily_transactions(date: str = None, send_email: bool = True) -> List[Dict[str, Any]]:
