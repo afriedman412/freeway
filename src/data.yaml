@@ -198,3 +198,220 @@ Donors:
         name: VISTRA ENERGY LEADERS PAC OF VISTRA ENERGY
       - id: C00107771
         name: XCEL ENERGY EMPLOYEE POLITICAL ACTION COMMITTEE (X
+Candidates:
+  - candidate_id: S4AZ00147
+    name: BERSCHAUER, CHRISTOPHER D
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00162
+    name: BERSCHAUER, CHRISTOPHER D
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00238
+    name: FULCHER JR, LEONARD
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00139
+    name: GALLEGO, RUBEN
+    party: DEM
+    state: AZ
+  - candidate_id: S4AZ00196
+    name: GRAYSON, RICHARD
+    party: NOL
+    state: AZ
+  - candidate_id: S4AZ00295
+    name: HAMPTON, EDWARD JAMES
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00279
+    name: HERNANDEZ, ARTURO
+    party: GRE
+    state: AZ
+  - candidate_id: S4AZ00154
+    name: KELLER, ALEXANDER MR
+    party: DEM
+    state: AZ
+  - candidate_id: S4AZ00220
+    name: LAKE, KARI
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00188
+    name: LAMB, MARK
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00253
+    name: MORENO, CONNIE MARIE MRS.
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00287
+    name: NORTON, MIKE
+    party: GRE
+    state: AZ
+  - candidate_id: S4AZ00246
+    name: REYE, ELIZABETH MOORE
+    party: REP
+    state: AZ
+  - candidate_id: S8AZ00197
+    name: SINEMA, KYRSTEN
+    party: IND
+    state: AZ
+  - candidate_id: S4AZ00204
+    name: WALKER, ROBERT JAMES
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00212
+    name: WHITE, ALAN MR
+    party: REP
+    state: AZ
+  - candidate_id: S4AZ00261
+    name: WILLIAMS, SARAH
+    party: LIB
+    state: AZ
+  - candidate_id: S4AZ00170
+    name: WRIGHT, BRIAN MR
+    party: REP
+    state: AZ
+  - candidate_id: S4MT00217
+    name: HUMMERT, MICHAEL
+    party: DEM
+    state: MT
+  - candidate_id: S2MT00062
+    name: JOHNSON, BRADLEY S
+    party: REP
+    state: MT
+  - candidate_id: S4MT00167
+    name: MADIGAN, THOMAS JOHN MR.
+    party: REP
+    state: MT
+  - candidate_id: S4MT00175
+    name: MYGLAND, JEREMY
+    party: REP
+    state: MT
+  - candidate_id: S8MT00234
+    name: ROSENDALE, MATT MR.
+    party: REP
+    state: MT
+  - candidate_id: S4MT00183
+    name: SHEEHY, TIM
+    party: REP
+    state: MT
+  - candidate_id: S6MT00162
+    name: TESTER, R. JON
+    party: DEM
+    state: MT
+  - candidate_id: S4MT00209
+    name: WALKINGCHILD, CHARLES
+    party: REP
+    state: MT
+  - candidate_id: S4NV00288
+    name: BROWN, SAM
+    party: REP
+    state: NV
+  - candidate_id: S4NV00395
+    name: CLARK, CORNELL MAURICE DR.
+    party: NON
+    state: NV
+  - candidate_id: S4NV00346
+    name: CLARK, CORNELL MAURICE M.D.
+    party: REP
+    state: NV
+  - candidate_id: S4NV00296
+    name: CONRAD, WILLIAM BRYAN
+    party: REP
+    state: NV
+  - candidate_id: S4NV00379
+    name: CUNNINGHAM, CHRIS
+    party: LIB
+    state: NV
+  - candidate_id: S2NV00340
+    name: DESTIN, JOSEPH JAMES
+    party: NPA
+    state: NV
+  - candidate_id: S4NV00312
+    name: GRADY, TONY
+    party: REP
+    state: NV
+  - candidate_id: S4NV00304
+    name: GUNTER, JEFF DR
+    party: REP
+    state: NV
+  - candidate_id: S4NV00247
+    name: KENNEDY, RONDA
+    party: REP
+    state: NV
+  - candidate_id: S2NV00415
+    name: LINDEMANN, BARRY
+    party: REP
+    state: NV
+  - candidate_id: S4NV00270
+    name: MARCHANT, JIM
+    party: REP
+    state: NV
+  - candidate_id: S4NV00403
+    name: MAZLO, CHRISTOPHER CRAIG
+    party: NON
+    state: NV
+  - candidate_id: S4NV00361
+    name: OKUBO, CHRISTOPHER T
+    party: LIB
+    state: NV
+  - candidate_id: S4NV00353
+    name: PHEASANT, GREGORY W
+    party: REP
+    state: NV
+  - candidate_id: S4NV00262
+    name: PHILLIPS, STEPHANIE
+    party: REP
+    state: NV
+  - candidate_id: S4NV00411
+    name: REGO, VINCENT
+    party: REP
+    state: NV
+  - candidate_id: S4NV00429
+    name: REGO, VINCENT GERONIMO
+    party: REP
+    state: NV
+  - candidate_id: S8NV00156
+    name: ROSEN, JACKY
+    party: DEM
+    state: NV
+  - candidate_id: S4NV00387
+    name: SCHAEFER, MIKE
+    party: DEM
+    state: NV
+  - candidate_id: S4NV00320
+    name: WALKER, TROY ZAKARI
+    party: DEM
+    state: NV
+  - candidate_id: S6OH00163
+    name: BROWN, SHERROD
+    party: DEM
+    state: OH
+  - candidate_id: S4OH00184
+    name: CHEN, JESSIE
+    party: COM
+    state: OH
+  - candidate_id: S2OH00477
+    name: DOLAN, MATT
+    party: REP
+    state: OH
+  - candidate_id: S8OH00144
+    name: FARIS, STEPHEN I MR
+    party: W
+    state: OH
+  - candidate_id: S4OH00200
+    name: LAROSE, FRANK
+    party: REP
+    state: OH
+  - candidate_id: S4OH00192
+    name: MORENO, BERNIE
+    party: REP
+    state: OH
+  - candidate_id: S4OH00176
+    name: MUTCHLER, JOEL
+    party: REP
+    state: OH
+  - candidate_id: S4OH00226
+    name: STUART, DOUGLAS B
+    party: REP
+    state: OH

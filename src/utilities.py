@@ -56,7 +56,7 @@ def query_table(q: str) -> List[Tuple]:
     return output
 
 
-def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20) -> requests.Response:
+def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20, params: dict = {}) -> requests.Response:
     """
     Get data from the Pro Publica or FEC APIs.
 
@@ -69,7 +69,7 @@ def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20
     """
     logger.debug(f"querying {url}")
     headers = {}
-    params = {'offset': offset}
+    params['offset'] = offset
     assert api_type in 'pg'
     if api_type == 'p':
         headers['X-API-Key'] = os.environ['PRO_PUBLICA_API_KEY']

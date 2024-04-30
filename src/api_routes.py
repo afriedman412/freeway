@@ -37,6 +37,8 @@ def get_late_contributions_endpoint(date_cutoff: str = None):
     Get "late contribution" forms from the Pro Publica API (24/48 hour forms)
 
     IEs show up here often before they show up as IE data, so this is better for reporting.
+
+    These are filtered -- only PAC contributions from CYCLE show up!
     """
     data = get_late_contributions(date_cutoff)
     save_data(pd.DataFrame(data))

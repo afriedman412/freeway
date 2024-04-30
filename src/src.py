@@ -157,11 +157,34 @@ def update_daily_transactions(date: str = None, send_email: bool = True) -> List
     url = url.format(*date.split("-"))
     new_today_transactions = recursive_query(url, filter=filter_on_ids)
     new_today_transactions_df = pd.DataFrame(new_today_transactions)
-    engine = make_conn()
-    new_today_transactions_df.to_sql(IE_TABLE, con=engine, if_exists="append")
-    if send_email:
-            send_email(
-                f"New Independent Expenditures for {os.getenv('TODAY', 'error')}!",
-                new_today_transactions_df[DATA_COLUMNS].to_html()
-            )
+    if len(new_today_transactions_df) > 0:
+        engine = make_conn()
+        new_today_transactions_df.to_sql(IE_TABLE, con=engine, if_exists="append")
+        if send_email:
+                send_email(
+                    f"New Independent Expenditures for {os.getenv('TODAY', 'error')}!",
+                    new_today_transactions_df[DATA_COLUMNS].to_html()
+                )
     return new_today_transactions_df
+
+
+def update_late_transactions(send_email: bool = True):
+    late_contributions = get_late_contributions()
+    existing_late_contributions = query_table("select fec_filing_id, transaction_id, contributor_state from fiu_late_pp")
+    cols = ['fec_filing_id', 'transaction_id']
+    new_late_contributions_df = pd.DataFrame(late_contributions).set_index(cols).join(
+        pd.DataFrame(existing_late_contributions).set_index(cols),
+        how="left",
+        rsuffix="_",
+        ).query('contributor_state_.isnull()').reset_index()
+    
+    if len(new_late_contributions_df) > 0:
+        conn = make_conn()
+        new_late_contributions_df.to_sql("fiu_late_pp", conn, if_exists="append")
+        if send_email:
+                send_email(
+                    f"New 24/48 Hour Forms for {os.getenv('TODAY', 'error')}!",
+                    new_late_contributions_df.to_html()
+                )
+    return new_late_contributions_df
+

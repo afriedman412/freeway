@@ -1,6 +1,6 @@
 import pandas as pd
-from flask import Blueprint, Response, render_template, request, url_for, current_app
-from .src import update_daily_transactions, get_late_contributions, save_data
+from flask import Blueprint, Response, render_template, request, url_for, current_app, jsonify
+from .src import update_daily_transactions, update_late_transactions, save_data
 from .config import IE_TABLE
 from .logger import logger
 from .utilities import get_today, query_table
@@ -62,31 +62,22 @@ def get_committee_ies(committee_id: str):
     )
 
 
-@main_routes.route("/update_ie", methods=['POST'])
-def update_ies():
+@main_routes.route("/update/<form_type>", methods=['POST'])
+def update_forms(form_type: str):
     """
-    There isn't a good reason to put this behind a password but like why not.
+    Updates Independent Expenditure data or 24/48 Hour Data.
+
+    form_type (str): either 'ie' or 'late', returns "bad form type" if not.
     """
+    if form_type not in ['ie', 'late']:
+        return "bad form type"
     if request.form.get("password") == 'd00d00':
         email_trigger = request.form.get('send_email', False)
-        new_transactions_df = update_daily_transactions(send_email=email_trigger)
+        func = update_late_transactions if form_type == 'late' else update_daily_transactions
+        new_transactions_df = func(send_email=email_trigger)
         return new_transactions_df.to_json()
     else:
         "bad password!"
-
-
-@main_routes.route("/update_late", methods=['POST'])
-def update_late():
-    """
-    There isn't a good reason to put this behind a password but like why not.
-    """
-    if request.form.get("password") == 'd00d00':
-        email_trigger = request.form.get('send_email', False)
-        late_contributions = get_late_contributions()
-        existing_late_contributions = query_table("select * from fiu_late_pp")
-    else:
-        "bad password!"
-
 
 
 @main_routes.route("/download", methods=['POST'])
@@ -104,7 +95,7 @@ def download_current_data():
         })
 
 
-@main_routes.route("/data")
+@main_routes.route("/saved_data")
 def show_currrent_data():
     """
     Shows saved data.
@@ -135,3 +126,15 @@ def get_routes() -> str:
 @main_routes.route("/favicon.ico")
 def favicon():
     return url_for('static', filename='data:,')
+
+
+@main_routes.route("/sludge_data/<table>")
+def get_sludge_data(table: str):
+    q = f"select * from {table}"
+    data = query_table(q)
+    df = pd.DataFrame(data)
+    return render_template(
+        'old_index.html',
+        params={"table": table},
+        df_html=df.to_html()
+    )
