@@ -67,3 +67,4 @@ def test_daily_transactions():
     new_today_transactions = recursive_query(url)
     new_today_transactions_df = pd.DataFrame(new_today_transactions)
     assert len(new_today_transactions_df) == 69
+
