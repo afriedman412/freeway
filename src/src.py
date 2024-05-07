@@ -23,7 +23,8 @@ def recursive_query(
         increment: int = 20, 
         api_type: str = 'p',
         limit: int = None, 
-        filter: Callable = None
+        filter: Callable = None,
+        params: dict = {}
         ):
     """
     Queries `url`, offsetting by `increment` every time, until no results or `limit` results.
@@ -34,6 +35,7 @@ def recursive_query(
         api_type (str): 'p' for Pro Publica, 'g' for FEC ... changes behavior and auth
         limit (int): if provided, break the loop and return results when total results passes limit
         filter (callable): function to filter query results by
+        params (dict): additional parameters to pass to query
 
     OUTPUT:
         bucket (list): accumulated query results
@@ -43,16 +45,13 @@ def recursive_query(
     counter = 0
     while True:
         logger.debug(f"offset: {offset}")
-        r = query_api(url, offset=offset, api_type=api_type, per_page=increment)
+        r = query_api(url, offset=offset, api_type=api_type, per_page=increment, params=params)
         if r.status_code == 200:
             try:
                 results = r.json().get('results')
                 if results:
-                    if filter:
-                        if not filter(results):
-                            break
-                        else:
-                            results = filter(results)
+                    if filter and filter(results):
+                        results = filter(results)
                     bucket += results
                     if limit and len(bucket) > limit:
                         break
