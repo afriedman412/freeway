@@ -56,7 +56,7 @@ def query_table(q: str) -> List[Tuple]:
     return output
 
 
-def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20, params: dict = {}) -> requests.Response:
+def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20, **params) -> requests.Response:
     """
     Get data from the Pro Publica or FEC APIs.
 

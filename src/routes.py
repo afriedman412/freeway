@@ -1,6 +1,6 @@
 import pandas as pd
 from flask import Blueprint, Response, render_template, request, url_for, current_app, jsonify
-from .src import update_daily_transactions, update_late_transactions, save_data
+from .src import update_daily_transactions, save_data
 from .config import IE_TABLE
 from .logger import logger
 from .utilities import get_today, query_table
@@ -73,8 +73,8 @@ def update_forms(form_type: str):
         return "bad form type"
     if request.form.get("password") == 'd00d00':
         email_trigger = request.form.get('send_email', False)
-        func = update_late_transactions if form_type == 'late' else update_daily_transactions
-        new_transactions_df = func(send_email=email_trigger)
+        # func = update_late_transactions if form_type == 'late' else update_daily_transactions
+        new_transactions_df = update_daily_transactions(send_email=email_trigger)
         return new_transactions_df.to_json()
     else:
         "bad password!"

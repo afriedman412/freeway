@@ -27,19 +27,22 @@ ON donor_sked_a.contributor_id=topic_pacs.id
 ORDER BY name, contribution_receipt_date
 """
 
-
-
-
-def committee_sked_a_scrape(committee_id):
+def committee_sked_a_scrape(committee_id, extra_params={}):
     url = "https://api.open.fec.gov/v1/schedules/schedule_a"
     params = {
             'committee_id': committee_id,
             'per_page': 100,
             'contributor_type': 'committee',
             'two_year_transaction_period': 2022,
+            'sort': '-contribution_receipt_date',
+            'sort_hide_null': 'false',
+            'sort_null_only': 'false',
             "api_key": os.environ["GOV_API_KEY"]
             }
+    
+    params.update(extra_params)
     results = []
+    page = 1
     while True:
         r = requests.get(
             url,
@@ -53,10 +56,14 @@ def committee_sked_a_scrape(committee_id):
                 ):
                 break
             else:
+                print(f"page {page} / {r.json()['pagination']['pages']}")
+
+                print(f"result", str((page-1)*params['per_page']), "/", str(r.json()['pagination']['count']))
                 print(r.json()['pagination']['last_indexes']['last_index'])
                 for k in ['last_index', 'last_contribution_receipt_date']:
                     params[k] = r.json()['pagination']['last_indexes'][k]
-                    results.append(r.json()['results'])
+                    results += r.json()['results']
+                page += 1
         else:
             raise Exception("Bad Status Code", r.status_code, r.content)
         sleep(1)

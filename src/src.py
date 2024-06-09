@@ -4,15 +4,12 @@ from time import sleep
 import pandas as pd
 import requests
 from flask import render_template
-import pytz
-from datetime import timedelta
-from datetime import datetime as dt
+
 
 from .logger import logger
 from .config import RECURSIVE_SLEEP_TIME, RETRY_SLEEP_TIME, BASE_URL, IE_TABLE, DATA_COLUMNS, DT_FORMAT
 from .utilities import load_data, query_api, get_today, query_table, make_conn, send_email
 from typing import Callable, List, Dict, Any
-
 
 
 DATA = load_data()
@@ -101,35 +98,10 @@ def save_data(data: pd.DataFrame):
     return
 
 
-def get_late_contributions(date_cutoff: str = None):
-    """
-    Get 24/48 hour contributions from PP api.
-    """
-    url = os.path.join(BASE_URL, "contributions/48hour.json")
-    if not date_cutoff:
-        tz = pytz.timezone('America/New_York')
-        today = dt.now().astimezone(tz)
-        date_cutoff = (today - timedelta(4)).strftime(DT_FORMAT)
-    else:
-        date_cutoff = dt.strptime(date_cutoff, DT_FORMAT).strftime(DT_FORMAT)
-    data = recursive_query(
-        url,
-        filter=lambda transactions: [
-            t for t in transactions 
-            if t['contribution_date'] > date_cutoff
-            and t['cycle'] == 2024
-            and t['entity_type'] == "PAC"
-            ]
-        )
-    return data
-
-
-def update_daily_transactions(date: str = None, send_email: bool = True) -> List[Dict[str, Any]]:
+def update_daily_transactions(date: str = None, trigger_email: bool = True) -> List[Dict[str, Any]]:
     """
     Gets independent expenditures for provided date. Default is today by EST.
     (Loaded with get_today())
-
-
 
     Input:
         date (str): date in DT_FORMAT format or None
@@ -159,7 +131,7 @@ def update_daily_transactions(date: str = None, send_email: bool = True) -> List
     if len(new_today_transactions_df) > 0:
         engine = make_conn()
         new_today_transactions_df.to_sql(IE_TABLE, con=engine, if_exists="append")
-        if send_email:
+        if trigger_email:
                 send_email(
                     f"New Independent Expenditures for {os.getenv('TODAY', 'error')}!",
                     new_today_transactions_df[DATA_COLUMNS].to_html()
@@ -167,23 +139,127 @@ def update_daily_transactions(date: str = None, send_email: bool = True) -> List
     return new_today_transactions_df
 
 
-def update_late_transactions(send_email: bool = True):
-    late_contributions = get_late_contributions()
-    existing_late_contributions = query_table("select fec_filing_id, transaction_id, contributor_state from fiu_late_pp")
-    cols = ['fec_filing_id', 'transaction_id']
-    new_late_contributions_df = pd.DataFrame(late_contributions).set_index(cols).join(
-        pd.DataFrame(existing_late_contributions).set_index(cols),
-        how="left",
-        rsuffix="_",
-        ).query('contributor_state_.isnull()').reset_index()
-    
-    if len(new_late_contributions_df) > 0:
-        conn = make_conn()
-        new_late_contributions_df.to_sql("fiu_late_pp", conn, if_exists="append")
-        if send_email:
-                send_email(
-                    f"New 24/48 Hour Forms for {os.getenv('TODAY', 'error')}!",
-                    new_late_contributions_df.to_html()
-                )
-    return new_late_contributions_df
+def get_late_contributions(**kwargs):
+    if kwargs.get("candidate_id"):
+        url = os.path.join(BASE_URL, "candidates", kwargs['candidate_id'], "48hour.json")
+    elif kwargs.get("committe_id"):
+        url = os.path.join(BASE_URL, "committees", kwargs['committe_id'], "48hour.json")
+    elif kwargs.get("date"):
+        year, month, day = kwargs['date'].split("-")
+        url = os.path.join(BASE_URL, "contributions", "48hour", year, month, f"{day}.json")
+    else:
+        year, month, day = get_today().split("-")
+        url = os.path.join(BASE_URL, "contributions", "48hour", year, month, f"{day}.json")
+    if "return_url" in kwargs and kwargs['return_url']:
+        return url
+    r = recursive_query(url)
+    return r
 
+
+def get_existing_late_contributions_db_data():
+    global ie_df, pac_names_df, candidate_info_df
+    conn = make_conn()
+    ie_df = pd.read_sql("select fec_candidate_id, candidate_name, office, state, district, fec_committee_id, fec_committee_name from fiu_pp", conn)
+    ie_df.drop_duplicates(inplace=True)
+    pac_names_df = pd.read_sql("select * from pac_names", conn)
+    candidate_info_df = pd.read_sql("select * from candidate_info", conn)
+    late_transactions_df = pd.read_sql("select fec_filing_id, transaction_id from late_transactions", conn)
+    return
+
+
+def get_committee_name(committee_id):
+    global pac_names_df
+    global ie_df
+    update = False
+    try:
+        name = pac_names_df.query('fec_committee_id==@committee_id').iloc[0]['committee_name']
+    except IndexError:
+        update = True
+        try:
+            name = ie_df.query('fec_committee_id==@committee_id').iloc[0]['fec_committee_name']
+        except IndexError:
+            url = os.path.join(BASE_URL, 'committees', committee_id) + ".json"
+            r = query_api(url)
+            try:
+                name = r.json()['results'][0].get('name', 'NAME MISSING')
+            except ValueError:
+                name = "NAME QUERY ERROR"
+    return name, update
+
+
+def get_candidate_info(candidate_id):
+    global candidate_info_df
+    global ie_df
+    assert len(ie_df) == 1842
+    update = False
+    try:
+        candidate_info = candidate_info_df.query('fec_candidate_id==@candidate_id').to_dict('records')[0]
+    except IndexError:
+        update = True
+        try:
+            candidate_info = ie_df.query('fec_candidate_id==@candidate_id')[['candidate_name', 'office', 'state', 'district']].to_dict('records')[0]
+        except IndexError:
+            url = os.path.join(BASE_URL, 'candidates', candidate_id) + ".json"
+            r = query_api(url)
+            try:
+                _, _, state, office, district = r.json()['results'][0]['district'].split("/")
+                district = district.replace(".json", "")
+                name = r.json()['results'][0]['display_name']
+            except (KeyError, ValueError):
+                name, state, office, district = ("QE", None, None, None)
+            candidate_info = dict(zip(
+                ['fec_candidate_id', 'candidate_name', 'office', 'state', 'district'],
+                [candidate_id, name, office, state, district]
+            ))
+    if isinstance(candidate_info, list):
+        candidate_info = candidate_info[0]
+    print(candidate_info)
+    return candidate_info, update
+
+
+def filter_and_format_late_contributions(contributions):
+    get_existing_late_contributions_db_data()
+    global late_transactions_df
+    if isinstance(contributions, requests.models.Response):
+        contributions = contributions.json().get('results', [])
+    formatted_contributions = []
+    pac_names_to_add = []
+    candidate_info_to_add = []
+    url_template = "https://docquery.fec.gov/cgi-bin/forms/{}/{}/"
+    contributions = [
+        c for c in contributions 
+        if c['entity_type'] == "PAC"
+        and [
+            c['fec_filing_id'], c['transaction_id']
+            ] not in late_transactions_df.values
+    ]
+    for c in contributions:
+        c['html_url'] = url_template.format(c['fec_committee_id'], c['fec_filing_id'])
+        committee_name, update_name = get_committee_name(c['fec_committee_id'])
+        c['committee_name'] = committee_name
+        if update_name:
+            pac_names_to_add.append((c['fec_committee_id'], committee_name))
+
+        candidate_info, update_info = get_candidate_info(c['fec_candidate_id'])
+        c.update(candidate_info)
+        if update_info:
+            candidate_info['fec_candidate_id'] = c['fec_candidate_id']
+            candidate_info_to_add.append(candidate_info)
+
+        formatted_contributions.append(c)
+
+    return formatted_contributions, pac_names_to_add, candidate_info_to_add
+
+
+def upload_and_send_late_contributions(formatted_contributions, pac_names_to_add, candidate_info_to_add, trigger_email=True):
+    conn = make_conn()
+    pd.DataFrame(formatted_contributions).to_sql('late_transactions', conn, if_exists='append', index=False)
+    pd.DataFrame(pac_names_to_add, columns=['fec_committee_id', 'committee_name']).drop_duplicates().to_sql('pac_names', conn, if_exists="append", index=False)
+    pd.DataFrame(candidate_info_to_add).drop_duplicates().to_sql('candidate_info', conn, if_exists="append", index=False)
+    if trigger_email:
+        send_email(
+                    f"New Late Contributions for {os.getenv('TODAY', 'error')}!",
+                    formatted_contributions.to_html(),
+                    to_email="afriedman412@gmail.com"
+                )
+    return
