@@ -1,11 +1,13 @@
 """
 Raw code to get all committee receipts for a cycle for a given committee. Adapt this into a reqular query to track donations to target committees.
 """
-import requests
-import os 
+import os
 from time import sleep
-from .src import make_conn, DATA
+
 import pandas as pd
+import requests
+
+from .src import DATA, make_conn
 
 target_pac_expenditures_per_target_candidate = """
 SELECT fec_committee_id, fec_committee_name, fec_candidate_id, candidate_name, office, state, district, sum(amount), count(*) 
@@ -27,19 +29,20 @@ ON donor_sked_a.contributor_id=topic_pacs.id
 ORDER BY name, contribution_receipt_date
 """
 
+
 def committee_sked_a_scrape(committee_id, extra_params={}):
     url = "https://api.open.fec.gov/v1/schedules/schedule_a"
     params = {
-            'committee_id': committee_id,
-            'per_page': 100,
-            'contributor_type': 'committee',
-            'two_year_transaction_period': 2022,
-            'sort': '-contribution_receipt_date',
-            'sort_hide_null': 'false',
-            'sort_null_only': 'false',
-            "api_key": os.environ["GOV_API_KEY"]
-            }
-    
+        'committee_id': committee_id,
+        'per_page': 100,
+        'contributor_type': 'committee',
+        'two_year_transaction_period': 2022,
+        'sort': '-contribution_receipt_date',
+        'sort_hide_null': 'false',
+        'sort_null_only': 'false',
+        "api_key": os.environ["GOV_API_KEY"]
+    }
+
     params.update(extra_params)
     results = []
     page = 1
@@ -47,18 +50,19 @@ def committee_sked_a_scrape(committee_id, extra_params={}):
         r = requests.get(
             url,
             params=params
-            )
+        )
         if r.status_code == 200:
             if (
                     'last_indexes' in r.json() and not r.json()['last_indexes']
                 ) or (
                     'results' in r.json() and not r.json()['results']
-                ):
+            ):
                 break
             else:
                 print(f"page {page} / {r.json()['pagination']['pages']}")
 
-                print(f"result", str((page-1)*params['per_page']), "/", str(r.json()['pagination']['count']))
+                print(f"result", str(
+                    (page-1)*params['per_page']), "/", str(r.json()['pagination']['count']))
                 print(r.json()['pagination']['last_indexes']['last_index'])
                 for k in ['last_index', 'last_contribution_receipt_date']:
                     params[k] = r.json()['pagination']['last_indexes'][k]
@@ -72,7 +76,7 @@ def committee_sked_a_scrape(committee_id, extra_params={}):
 
 def flatten_dicto(dicto, prefix):
     new_dicto = {}
-    for k,v in dicto.items():
+    for k, v in dicto.items():
         k = '_'.join([prefix, k])
         if isinstance(v, list):
             new_dicto[k] = ",".join([str(v_) for v_ in v])
@@ -80,7 +84,8 @@ def flatten_dicto(dicto, prefix):
             new_dicto[k] = v
     return new_dicto
 
-def format_results(results, update_dict: dict=None):
+
+def format_results(results, update_dict: dict = None):
     new_results = []
     for j in results:
         for r in j:
@@ -96,7 +101,7 @@ def format_results(results, update_dict: dict=None):
     return new_results
 
 
-def full_scrape(committee_id, update_dict: dict=None):
+def full_scrape(committee_id, update_dict: dict = None):
     results = committee_sked_a_scrape(committee_id)
     if not results:
         print("no results returned!")
@@ -132,7 +137,7 @@ def get_pac_contributions_to_candidates():
     GROUP BY fec_committee_id, fec_candidate_id
     """
     conn = make_conn()
-    pac_contributions  = pd.read_sql(q, conn)
+    pac_contributions = pd.read_sql(q, conn)
     return pac_contributions
 
 
@@ -148,6 +153,3 @@ def get_topic_donors_by_pac(topic):
     conn = make_conn()
     topic_donors_by_pac = pd.read_sql(q, conn)
     return topic_donors_by_pac
-    
-
-    

@@ -2,8 +2,8 @@ import os
 
 from flask import Flask, render_template, url_for
 
-from .routes import main_routes
 from .api_routes import api_routes
+from .routes import main_routes
 
 
 def generate_app() -> Flask:
@@ -19,4 +19,3 @@ def generate_app() -> Flask:
 app = generate_app()
 for routes in [main_routes, api_routes]:
     app.register_blueprint(routes)
-

@@ -1,18 +1,20 @@
 """
 General functions that everyone should have access to!
 """
-import yaml
-import pytz
-from .config import DT_FORMAT, EMAIL_FROM, EMAILS_TO
-from datetime import datetime as dt
-from sqlalchemy.engine.base import Engine
-from sqlalchemy import create_engine, text
-from .logger import logger
-import requests
 import os
+from datetime import datetime as dt
 from typing import List, Tuple, Union
+
+import pytz
+import requests
+import yaml
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine.base import Engine
+
+from .config import DT_FORMAT, EMAIL_FROM, EMAILS_TO
+from .logger import logger
 
 
 def load_data():
@@ -100,7 +102,8 @@ def send_email(
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
-        assert response.status_code == 202, f"Bad status code: {response.status_code}"
+        assert response.status_code == 202, f"Bad status code: {
+            response.status_code}"
         logger.debug("Email sent successfully!")
         return True
     except Exception as e:

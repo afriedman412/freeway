@@ -2,18 +2,21 @@
 Convenience endpoints for querying Pro Publica and FEC APIs.
 """
 
-import pandas as pd
-from flask import Blueprint, render_template
 import os
-import pytz
 from datetime import datetime as dt
 from datetime import timedelta
 
-from .src import load_results, query_api, recursive_query, save_data, get_late_contributions
-from .config import BASE_URL, GOV_BASE_URL, DT_FORMAT
+import pandas as pd
+import pytz
+from flask import Blueprint, render_template
+
+from .config import BASE_URL, DT_FORMAT, GOV_BASE_URL
 from .logger import logger
+from .src import (get_late_contributions, load_results, query_api,
+                  recursive_query, save_data)
 
 api_routes = Blueprint("api_routes", __name__)
+
 
 @api_routes.route("/schedule_a/<comittee_id>")
 def get_schedule_a(comittee_id: str):
@@ -43,10 +46,10 @@ def get_late_contributions_endpoint(date_cutoff: str = None):
     data = get_late_contributions(date_cutoff)
     save_data(pd.DataFrame(data))
     return render_template(
-            "index.html",
-            df_html=pd.DataFrame(data).to_html(),
-            params={"title": f"Late Contributions up to {date_cutoff}"}
-        )
+        "index.html",
+        df_html=pd.DataFrame(data).to_html(),
+        params={"title": f"Late Contributions up to {date_cutoff}"}
+    )
 
 
 @api_routes.route('/committee/<committee_id>')

@@ -1,15 +1,15 @@
 import os
 
+import pandas as pd
 import pytest
 from flask_testing import TestCase
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
-import pandas as pd
 
 from app import app
 from src.config import BASE_URL, EMAIL_FROM
-from src.utilities import make_conn, query_api, send_email, query_table
 from src.src import recursive_query
+from src.utilities import make_conn, query_api, query_table, send_email
 
 
 class TestFolio(TestCase):
@@ -43,7 +43,8 @@ def test_create_engine_failure():
 
 
 def test_email():
-    email_result = send_email("testing fiu email", "this is a test message for the fiu app", to_email=EMAIL_FROM)
+    email_result = send_email(
+        "testing fiu email", "this is a test message for the fiu app", to_email=EMAIL_FROM)
     assert email_result
 
 
@@ -55,9 +56,11 @@ def test_pp_query():
 
 def test_committee_endpoint():
     committee_id = 'C00799031'
-    committee_ies = query_table(f"select * from fiu_pp where fec_committee_id='{committee_id}'")
+    committee_ies = query_table(
+        f"select * from fiu_pp where fec_committee_id='{committee_id}'")
     assert len(committee_ies) > 0
-    assert pd.DataFrame(committee_ies)['fec_committee_name'][0] == 'United Democracy Project (Udp)'
+    assert pd.DataFrame(committee_ies)[
+        'fec_committee_name'][0] == 'United Democracy Project (Udp)'
 
 
 def test_daily_transactions():
@@ -68,3 +71,11 @@ def test_daily_transactions():
     new_today_transactions_df = pd.DataFrame(new_today_transactions)
     assert len(new_today_transactions_df) == 81
 
+
+def test_late_contributions():
+    date = "2024-04-01"
+    year, month, day = date.split("-")
+    url = os.path.join(BASE_URL, "contributions", "48hour", year, month, f"{day}.json")
+    today_late_transactions = recursive_query(url)
+    today_late_transactions_df = pd.DataFrame(today_late_transactions)
+    assert len(today_late_transactions_df) == 3

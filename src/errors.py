@@ -1,8 +1,8 @@
 from flask import Blueprint, abort, jsonify, request
-from .utilities import send_email
+
 from .config import EMAIL_FROM
 from .logger import logger
-
+from .utilities import send_email
 
 error_routes = Blueprint("error_rotes", __name__)
 
@@ -31,7 +31,7 @@ def internal_server_error(error):
         body,
         from_email=EMAIL_FROM,
         to_email=EMAIL_FROM
-        )
+    )
     return response
 
 
