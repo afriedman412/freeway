@@ -7,9 +7,9 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
 from app import app
-from src.config import BASE_URL, EMAIL_FROM
+from config import BASE_URL, EMAIL_FROM
 from src.src import recursive_query
-from src.utilities import make_conn, query_api, query_table, send_email
+from src.utilities import make_conn, query_api, query_db, send_email
 
 
 class TestFolio(TestCase):
@@ -22,6 +22,15 @@ class TestFolio(TestCase):
 
     def test_endpoints(self):
         for endpoint in ["/", "/committee/C00864215", "/dates"]:
+            endpoint_response = self.client.get(endpoint)
+            self.assert200(endpoint_response)
+
+    def test_more_endpoints(self):
+        for endpoint in [
+            "/",
+            "/committee/C00864215",
+            "/filings/date/2024-3-25"
+        ]:
             endpoint_response = self.client.get(endpoint)
             self.assert200(endpoint_response)
 
@@ -56,7 +65,7 @@ def test_pp_query():
 
 def test_committee_endpoint():
     committee_id = 'C00799031'
-    committee_ies = query_table(
+    committee_ies = query_db(
         f"select * from fiu_pp where fec_committee_id='{committee_id}'")
     assert len(committee_ies) > 0
     assert pd.DataFrame(committee_ies)[
@@ -72,7 +81,7 @@ def test_daily_transactions():
     assert len(new_today_transactions_df) == 81
 
 
-def test_late_contributions():
+def test_late_contributions_query():
     date = "2024-04-01"
     year, month, day = date.split("-")
     url = os.path.join(BASE_URL, "contributions", "48hour", year, month, f"{day}.json")

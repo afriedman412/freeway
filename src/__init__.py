@@ -8,6 +8,7 @@ from .routes import main_routes
 
 def generate_app() -> Flask:
     app = Flask(__name__)
+
     if not os.getenv("PRO_PUBLICA_API_KEY"):
         from dotenv import load_dotenv
         load_dotenv()

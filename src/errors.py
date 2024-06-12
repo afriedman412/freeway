@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, jsonify, request
 
-from .config import EMAIL_FROM
+from config import EMAIL_FROM
+
 from .logger import logger
 from .utilities import send_email
 

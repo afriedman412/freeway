@@ -1,77 +1,19 @@
 import os
-from time import sleep
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 import requests
 from flask import render_template
 
-from .config import (BASE_URL, DATA_COLUMNS, IE_TABLE, RECURSIVE_SLEEP_TIME,
-                     RETRY_SLEEP_TIME)
+from config import (BASE_URL, CANDIDATE_INFO_TABLE, DATA_COLUMNS, IE_TABLE,
+                    LATE_CONTRIBUTIONS_TABLE, PAC_NAMES_TABLE)
+
 from .logger import logger
-from .utilities import (get_today, load_data, make_conn, query_api,
-                        query_table, send_email)
+from .utilities import (get_today, load_data, make_conn, query_api, query_db,
+                        recursive_query, send_email)
 
 DATA = load_data()
-
-
-def recursive_query(
-        url: str,
-        increment: int = 20,
-        api_type: str = 'p',
-        limit: int = None,
-        filter: Callable = None,
-        params: dict = {}
-):
-    """
-    Queries `url`, offsetting by `increment` every time, until no results or `limit` results.
-
-    INPUTS:
-        url (str): endpoint for the Pro Publica or FEC API
-        increment (int): number of results to return per page (passed to API)
-        api_type (str): 'p' for Pro Publica, 'g' for FEC ... changes behavior and auth
-        limit (int): if provided, break the loop and return results when total results passes limit
-        filter (callable): function to filter query results by
-        params (dict): additional parameters to pass to query
-
-    OUTPUT:
-        bucket (list): accumulated query results
-    """
-    bucket = []
-    offset = 0
-    counter = 0
-    while True:
-        logger.debug(f"offset: {offset}")
-        r = query_api(url, offset=offset, api_type=api_type,
-                      per_page=increment, params=params)
-        if r.status_code == 200:
-            try:
-                results = r.json().get('results')
-                if results:
-                    if filter and filter(results):
-                        results = filter(results)
-                    bucket += results
-                    if limit and len(bucket) > limit:
-                        break
-                    offset += increment
-                    sleep(RECURSIVE_SLEEP_TIME)
-                else:
-                    break
-            except requests.exceptions.JSONDecodeError:
-                logger.debug(f"JSONDecodeError ... retrying in {
-                             RETRY_SLEEP_TIME}")
-                sleep(RETRY_SLEEP_TIME)
-                counter += 1
-
-        else:
-            raise Exception(", ".join(
-                [
-                    str(r.status_code),
-                    r.json().get(
-                        "message", "error retrieving error message"
-                    )]))
-    logger.debug(f"total results: {len(bucket)}")
-    return bucket
+TODAY = get_today()
 
 
 def load_results(url: str, title_params: dict = {}, limit: str = None):
@@ -130,7 +72,7 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
     existing_ids = [
         i[0]
         for i in
-        query_table(
+        query_db(
             f"select distinct unique_id from {IE_TABLE}"
         )]
 
@@ -146,8 +88,7 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
             IE_TABLE, con=engine, if_exists="append")
         if trigger_email:
             send_email(
-                f"New Independent Expenditures for {
-                    os.getenv('TODAY', 'error')}!",
+                f"New Independent Expenditures for {TODAY}!",
                 new_today_transactions_df[DATA_COLUMNS].to_html()
             )
     return new_today_transactions_df
@@ -181,20 +122,20 @@ def get_late_contributions(**kwargs):
     elif kwargs.get("committe_id"):
         logger.debug(
             f"getting late contributions for committee {kwargs['committe_id']}"
-            )
+        )
         url = os.path.join(BASE_URL, "committees",
                            kwargs['committe_id'], "48hour.json")
     elif kwargs.get("date"):
         logger.debug(
             f"getting late contributions for date {kwargs['date']}"
-            )
+        )
         year, month, day = kwargs['date'].split("-")
         url = os.path.join(BASE_URL, "contributions",
                            "48hour", year, month, f"{day}.json")
     else:
         logger.debug(
             "getting late contributions for today!"
-            )
+        )
         year, month, day = get_today().split("-")
         url = os.path.join(BASE_URL, "contributions",
                            "48hour", year, month, f"{day}.json")
@@ -218,10 +159,11 @@ def get_existing_late_contributions_db_data():
         "select fec_candidate_id, candidate_name, office, state, district, fec_committee_id, fec_committee_name from fiu_pp",
         conn)
     ie_df.drop_duplicates(inplace=True)
-    pac_names_df = pd.read_sql("select * from pac_names", conn)
-    candidate_info_df = pd.read_sql("select * from candidate_info", conn)
+    pac_names_df = pd.read_sql(f"select * from {PAC_NAMES_TABLE}", conn)
+    candidate_info_df = pd.read_sql(
+        f"select * from {CANDIDATE_INFO_TABLE}", conn)
     late_contributions_df = pd.read_sql(
-        "select fec_filing_id, transaction_id from late_contributions", conn)
+        f"select fec_filing_id, transaction_id from {LATE_CONTRIBUTIONS_TABLE}", conn)
     return
 
 
@@ -346,7 +288,7 @@ def filter_and_format_late_contributions(contributions: List) -> Tuple[List, Lis
             pac_names_to_add.append({
                 "fec_committee_id": c['fec_committee_id'],
                 "committee_name": committee_name
-                })
+            })
 
         candidate_info, update_info = get_candidate_info(c['fec_candidate_id'])
         c.update(candidate_info)
@@ -384,7 +326,7 @@ def upload_and_send_late_contributions(formatted_contributions,
     if trigger_email is True:
         logger.debug("*** sending new late contributions email")
         send_email(
-            f"New Late Contributions for {os.getenv('TODAY', 'error')}!",
+            f"New Late Contributions for {TODAY}!",
             pd.DataFrame(formatted_contributions).to_html(),
             to_email="afriedman412@gmail.com"
         )

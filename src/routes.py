@@ -1,11 +1,13 @@
 import pandas as pd
-from flask import (Blueprint, Response, current_app, jsonify, render_template,
-                   request, url_for)
+from flask import (Blueprint, Response, current_app, render_template, request,
+                   url_for)
 
-from .config import IE_TABLE
+from config import IE_TABLE
+
 from .logger import logger
-from .src import save_data, update_daily_transactions, update_late_contributions
-from .utilities import get_today, query_table
+from .src import (save_data, update_daily_transactions,
+                  update_late_contributions)
+from .utilities import get_today, query_db
 
 main_routes = Blueprint("main_routes", __name__)
 
@@ -26,13 +28,13 @@ def get_ies(date: str = None):
         logger.debug('IEs for today...')
         date = get_today()
         custom_date = False
-    date_ies = query_table(
+    date_ies = query_db(
         f"select * from {IE_TABLE} where dissemination_date='{date}'")
     if not date_ies:
         ie_message = f"No Independent Expenditures for {
             date}." if custom_date else f"No Independent Expenditures for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
-        date_ies = query_table(
+        date_ies = query_db(
             f"select * from {IE_TABLE} order by dissemination_date desc limit 10")
         returned_transactions = False
     ie_message = f"Independent Expenditures for {
@@ -55,7 +57,7 @@ def get_committee_ies(committee_id: str):
     logger.debug(f"Getting IEs for {committee_id}...")
     df = pd.DataFrame()
     committee_name = None
-    committee_ies = query_table(
+    committee_ies = query_db(
         f"select * from fiu_pp where fec_committee_id='{committee_id}'")
     if committee_ies:
         df = pd.DataFrame(committee_ies)
@@ -93,7 +95,7 @@ def download_current_data():
     """
     Downloads most recently loaded data.
     """
-    current_data = query_table("select * from temp")
+    current_data = query_db("select * from temp")
     return Response(
         pd.DataFrame(current_data).to_csv(index=False),
         mimetype="text/csv",
@@ -108,7 +110,7 @@ def show_currrent_data():
     """
     Shows saved data.
     """
-    current_data = query_table("select * from temp")
+    current_data = query_db("select * from temp")
     return render_template(
         "index.html",
         df_html=pd.DataFrame(current_data).to_html(),
@@ -139,7 +141,7 @@ def favicon():
 @main_routes.route("/sludge_data/<table>")
 def get_sludge_data(table: str):
     q = f"select * from {table}"
-    data = query_table(q)
+    data = query_db(q)
     df = pd.DataFrame(data)
     return render_template(
         'old_index.html',
@@ -172,13 +174,13 @@ def show_late_contributions(date: str = None) -> str:
         logger.debug('Late Contributions for today...')
         date = get_today()
         custom_date = False
-    date_ies = query_table(
+    date_ies = query_db(
         f"select * from late_contributions where contribution_date='{date}'")
     if not date_ies:
         message = f"No Late Contributions for {
             date}." if custom_date else f"No Late Contributions for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
-        date_ies = query_table(
+        date_ies = query_db(
             "select * from late_contributions order by contribution_date desc limit 10")
         returned_transactions = False
     message = f"Late Contributions for {

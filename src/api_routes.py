@@ -3,17 +3,14 @@ Convenience endpoints for querying Pro Publica and FEC APIs.
 """
 
 import os
-from datetime import datetime as dt
-from datetime import timedelta
 
 import pandas as pd
-import pytz
 from flask import Blueprint, render_template
 
-from .config import BASE_URL, DT_FORMAT, GOV_BASE_URL
+from config import BASE_URL, GOV_BASE_URL
+
 from .logger import logger
-from .src import (get_late_contributions, load_results, query_api,
-                  recursive_query, save_data)
+from .src import get_late_contributions, load_results, query_api, save_data
 
 api_routes = Blueprint("api_routes", __name__)
 
@@ -57,8 +54,12 @@ def load_committee_ie(committee_id: str):
     """
     committee independent expenditures
     """
-    url = "/".join([BASE_URL, 'committees', committee_id,
-                   'independent_expenditures.json'])
+    url = os.path.join(
+        BASE_URL,
+        'committees',
+        committee_id,
+        'independent_expenditures.json'
+    )
     return load_results(url, {'committee_id': committee_id})
 
 
@@ -67,13 +68,22 @@ def load_committee_filings(committee_id: str):
     """
     committee filings
     """
-    url = "/".join([BASE_URL, 'committees', committee_id, 'filings.json'])
+    url = os.path.join(
+        BASE_URL,
+        'committees',
+        committee_id,
+        'filings.json'
+    )
     return load_results(url, {'committee_id': committee_id})
 
 
 @api_routes.route("/committee/search/<query>")
 def search_committees(query: str):
-    url = "/".join([BASE_URL, 'committees', f'search.json?query={query}'])
+    url = os.path.join(
+        BASE_URL,
+        'committees',
+        f'search.json?query={query}'
+    )
     return load_results(url, {'query': query})
 
 
@@ -83,8 +93,11 @@ def load_date_ie(date: str):
     independent expenditures by date
     """
     year, month, day = date.split('-')
-    url = "/".join([BASE_URL, 'independent_expenditures',
-                   year, month, f"{day}.json"])
+    url = os.path.join(
+        BASE_URL,
+        'independent_expenditures',
+        year, month, f"{day}.json"
+    )
     return load_results(url, {'date': date})
 
 
@@ -94,5 +107,9 @@ def load_date_filings(date: str):
     filings by date
     """
     year, month, day = date.split('-')
-    url = "/".join([BASE_URL, 'filings', year, month, f"{day}.json"])
+    url = os.path.join(
+        BASE_URL,
+        'filings',
+        year, month, f"{day}.json"
+    )
     return load_results(url, {'date': date})
