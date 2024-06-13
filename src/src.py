@@ -114,28 +114,26 @@ def get_late_contributions(**kwargs):
     """
     Queries ProPublica "late contributions" endpoints, depending on what param you pass.
     """
-    if kwargs.get("candidate_id"):
-        logger.debug(
-            f"getting late contributions for candidate {kwargs['candidate_id']}")
+    if kwargs.get('candidate_id'):
+        candidate_id = kwargs['candidate_id']
+        logger.debug(f"getting late contributions for candidate {candidate_id}")
         url = os.path.join(BASE_URL, "candidates",
                            kwargs['candidate_id'], "48hour.json")
-    elif kwargs.get("committe_id"):
-        logger.debug(
-            f"getting late contributions for committee {kwargs['committe_id']}"
+    elif kwargs.get("committee_id"):
+        committee_id = kwargs['committee_id']
+        logger.debug(f"getting late contributions for \
+                        committee {committee_id}"
         )
         url = os.path.join(BASE_URL, "committees",
-                           kwargs['committe_id'], "48hour.json")
+                        kwargs['committe_id'], "48hour.json")
     elif kwargs.get("date"):
-        logger.debug(
-            f"getting late contributions for date {kwargs['date']}"
-        )
+        date = kwargs['date']
+        logger.debug(f"getting late contributions for date {date}")
         year, month, day = kwargs['date'].split("-")
         url = os.path.join(BASE_URL, "contributions",
                            "48hour", year, month, f"{day}.json")
     else:
-        logger.debug(
-            "getting late contributions for today!"
-        )
+        logger.debug("getting late contributions for today!")
         year, month, day = get_today().split("-")
         url = os.path.join(BASE_URL, "contributions",
                            "48hour", year, month, f"{day}.json")
@@ -163,7 +161,8 @@ def get_existing_late_contributions_db_data():
     candidate_info_df = pd.read_sql(
         f"select * from {CANDIDATE_INFO_TABLE}", conn)
     late_contributions_df = pd.read_sql(
-        f"select fec_filing_id, transaction_id from {LATE_CONTRIBUTIONS_TABLE}", conn)
+        f"""select fec_filing_id, transaction_id
+        from {LATE_CONTRIBUTIONS_TABLE}""", conn)
     return
 
 

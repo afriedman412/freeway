@@ -35,6 +35,8 @@ def teardown_test_tables():
     for t in TABLES:
         with conn.connect() as ccc:
             for t in TABLES:
-                ccc.execute(text(f"DROP TABLE IF EXISTS {TEST_FORMAT.format(t)};"))
+                ccc.execute(text(
+                    f"DROP TABLE IF EXISTS {TEST_FORMAT.format(t)};"
+                    ))
 
     conn.dispose()

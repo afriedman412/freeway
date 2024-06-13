@@ -31,14 +31,19 @@ def get_ies(date: str = None):
     date_ies = query_db(
         f"select * from {IE_TABLE} where dissemination_date='{date}'")
     if not date_ies:
-        ie_message = f"No Independent Expenditures for {
-            date}." if custom_date else f"No Independent Expenditures for today ({date})."
+        if custom_date:
+            ie_message = \
+                f"No Independent Expenditures for {date}."  
+        else:
+            f"No Independent Expenditures for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
         date_ies = query_db(
             f"select * from {IE_TABLE} order by dissemination_date desc limit 10")
         returned_transactions = False
-    ie_message = f"Independent Expenditures for {
-        date}." if custom_date else f"New Independent Expenditures for today ({date})!!"
+    if custom_date:
+        ie_message = f"Independent Expenditures for {date}." 
+    else:
+        ie_message = f"New Independent Expenditures for today ({date})!!"
     df = pd.DataFrame(date_ies)
     save_data(df)
     logger.debug(df.shape)
@@ -177,14 +182,21 @@ def show_late_contributions(date: str = None) -> str:
     date_ies = query_db(
         f"select * from late_contributions where contribution_date='{date}'")
     if not date_ies:
-        message = f"No Late Contributions for {
-            date}." if custom_date else f"No Late Contributions for today ({date})."
+        if custom_date:
+            message = f"No Late Contributions for {date}."  
+        else:
+            message = f"No Late Contributions for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
         date_ies = query_db(
-            "select * from late_contributions order by contribution_date desc limit 10")
+            """select * 
+            from late_contributions 
+            order by contribution_date desc 
+            limit 10""")
         returned_transactions = False
-    message = f"Late Contributions for {
-        date}." if custom_date else f"Late Contributions for today ({date})!!"
+    if custom_date:
+        message = f"Late Contributions for {date}."
+    else:
+        message = f"Late Contributions for today ({date})!!"
     df = pd.DataFrame(date_ies)
     save_data(df)
     logger.debug(df.shape)

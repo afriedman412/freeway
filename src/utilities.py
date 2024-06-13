@@ -107,8 +107,8 @@ def send_email(
     try:
         sg = SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
         response = sg.send(message)
-        assert response.status_code == 202, f"Bad status code: {
-            response.status_code}"
+        assert response.status_code == 202, \
+            f"Bad status code: {response.status_code}"
         logger.debug("Email sent successfully!")
         return True
     except Exception as e:
@@ -159,8 +159,8 @@ def recursive_query(
                 else:
                     break
             except requests.exceptions.JSONDecodeError:
-                logger.debug(f"JSONDecodeError ... retrying in {
-                             RETRY_SLEEP_TIME}")
+                logger.debug(f"JSONDecodeError ... \
+                             retrying in {RETRY_SLEEP_TIME}")
                 sleep(RETRY_SLEEP_TIME)
                 counter += 1
 
