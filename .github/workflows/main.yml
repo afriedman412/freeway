@@ -18,6 +18,7 @@ jobs:
       id-token: 'write'
 
     runs-on: ubuntu-latest
+    environment: sludge-freeway-gcp
     steps:
       - name: Checkout
         uses: actions/checkout@v1
