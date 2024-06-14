@@ -9,12 +9,12 @@ env:
   GAR_LOCATION: us-central1 # TODO: update Artifact Registry location
   SERVICE: freeway-service # TODO: update Cloud Run service name
   REGION: us-central1 # TODO: update Cloud Run service region
-
-  # https://freeway-service-nelnx4a7ca-uc.a.run.app
+  WIP_PROVIDER: projects/952763617930/locations/global/workloadIdentityPools/freeway-pool
+  SERVICE_ACCT_EMAIL: freeway-service@freeway-425922.iam.gserviceaccount.com
+  AUDIENCE: principal://iam.googleapis.com/projects/952763617930/locations/global/workloadIdentityPools/freeway-pool/subject/SUBJECT_ATTRIBUTE_VALUE
 
 jobs:
   deploy:
-    # Add 'id-token' with the intended permissions for workload identity federation
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -30,9 +30,9 @@ jobs:
         uses: 'google-github-actions/auth@v1'
         with:
           token_format: 'access_token'
-          workload_identity_provider: '${{ secrets.WIF_PROVIDER }}' # e.g. - projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
-          service_account: '${{ secrets.WIF_SERVICE_ACCOUNT }}' # e.g. - my-service-account@my-project.iam.gserviceaccount.com
-          id_token: '${{ secrets.WIF_ID_TOKEN }}'
+          workload_identity_provider: '${{ env.WIP_PROVIDER }}'
+          service_account: '${{ env.SERVICE_ACCT_EMAIL }}'
+          audience: '${{ env.AUDIENCE }}'
 
       # Authenticate Docker to Google Cloud Artifact Registry
       - name: Docker Auth
