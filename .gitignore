@@ -6,6 +6,7 @@ this_will_fail
 .data/
 *sked_*.txt
 sked_a_stuff/
+wif.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
