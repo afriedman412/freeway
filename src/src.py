@@ -66,9 +66,6 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
 
     if not date:
         date = get_today()
-    # if not re.search(DT_FORMAT, date):
-    #     # this should error out to the 500 endpoint
-    #     date = parse(date).strftime(DT_FORMAT)
     existing_ids = [
         i[0]
         for i in
@@ -94,7 +91,7 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
     return new_today_transactions_df
 
 
-def update_late_contributions(**kwargs):
+def update_late_contributions(**kwargs) -> pd.DataFrame:
     """
     Gets late contributions from today
     Filters out non-PAC and old contributions
@@ -106,8 +103,8 @@ def update_late_contributions(**kwargs):
     """
     contributions = get_late_contributions(**kwargs)
     f_contributions_etc = filter_and_format_late_contributions(contributions)
-    upload_and_send_late_contributions(*f_contributions_etc, trigger_email=kwargs.get('trigger_email', False))
-    return
+    contributions_df = upload_and_send_late_contributions(*f_contributions_etc, trigger_email=kwargs.get('trigger_email', False))
+    return contributions_df
 
 
 def get_late_contributions(**kwargs):
@@ -302,7 +299,7 @@ def filter_and_format_late_contributions(contributions: List) -> Tuple[List, Lis
 
 def upload_and_send_late_contributions(formatted_contributions,
                                        pac_names_to_add: list = [], candidate_info_to_add: list = [],
-                                       trigger_email: bool = True):
+                                       trigger_email: bool = True) -> pd.DataFrame:
     """
     Adds "pac_names_to_add" and "candidate_info_to_add" and "formatted contributions" to db.
 
@@ -322,11 +319,12 @@ def upload_and_send_late_contributions(formatted_contributions,
     ):
         df = pd.DataFrame(data)
         df.to_sql(table, conn, if_exists="append", index=False)
+    contributions_df = pd.DataFrame(formatted_contributions)
     if trigger_email is True:
         logger.debug("*** sending new late contributions email")
         send_email(
             f"New Late Contributions for {TODAY}!",
-            pd.DataFrame(formatted_contributions).to_html(),
+            contributions_df.to_html(),
             to_email="afriedman412@gmail.com"
         )
-    return
+    return contributions_df

@@ -85,13 +85,21 @@ def update_forms(form_type: str):
 
     form_type (str): either 'ie' or 'late', returns "bad form type" if not.
     """
-    if form_type not in ['ie', 'late']:
-        return "bad form type"
+    if form_type == 'ie':
+        func = update_daily_transactions
+    elif form_type == "late":
+        func = update_late_contributions
+    else:
+        return f"bad form type: ('{form_type}')"
     if request.form.get("password") == 'd00d00':
-        email_trigger = request.form.get('send_email', False)
-        new_transactions_df = update_daily_transactions(
-            send_email=email_trigger)
-        return new_transactions_df.to_json()
+        trigger_email = request.form.get('send_email', False)
+        new_data = func(trigger_email=trigger_email)
+        data_dict = {
+            'form_type': form_type,
+            'trigger_email': trigger_email,
+            'transactions': new_data.to_dict()
+        }
+        return jsonify(data_dict)
     else:
         "bad password!"
 
@@ -154,16 +162,6 @@ def get_sludge_data(table: str):
         params={"table": table},
         df_html=df.to_html()
     )
-
-
-@main_routes.route("/late_contributions/update")
-def update_late_contributions_endpoint() -> str:
-    # get kwargs from GET
-    update_late_contributions(
-        date=request.args.get('date'),
-        trigger_email=request.args.get('trigger_email')
-    )
-    return "Late contributions updated!"
 
 
 @main_routes.route('/late_contributions/')
