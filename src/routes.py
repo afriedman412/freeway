@@ -97,7 +97,7 @@ def update_forms(form_type: str):
         data_dict = {
             'form_type': form_type,
             'trigger_email': trigger_email,
-            'transactions': new_data.to_dict()
+            'transactions': new_data.to_dict('records')
         }
         return jsonify(data_dict)
     else:
