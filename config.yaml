@@ -1,0 +1,7 @@
+logging:
+  level: INFO
+  handlers:
+    - type: cloud_logging
+      level: INFO
+      cloud_logging_options:
+        logging_mode: CLOUD_LOGGING_ONLY
