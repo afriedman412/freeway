@@ -1,9 +1,10 @@
 import pandas as pd
 from flask import (Blueprint, Response, current_app, render_template, request,
-                   url_for)
+                   url_for, jsonify)
 
 from config import IE_TABLE
 
+import os
 from .logger import logger
 from .src import (save_data, update_daily_transactions,
                   update_late_contributions)
@@ -208,3 +209,17 @@ def show_late_contributions(date: str = None) -> str:
         ie_message=message,
         df_html=df.to_html()
     )
+
+@main_routes.route('/env_test')
+def test_vars():
+    vars = {}
+    for k in os.environ:
+        if k in ['PRO_PUBLICA_API_KEY', 
+                 'SENDGRID_API_KEY',
+                 'GOV_API_KEY',
+                 'MYSQL_PW'
+                 ]:
+            vars[k] = len(os.getenv(k, "x"))
+        else:
+            vars[k] = os.getenv(k, "error")
+    return vars
