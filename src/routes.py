@@ -220,6 +220,4 @@ def test_vars():
                  'MYSQL_PW'
                  ]:
             vars[k] = len(os.getenv(k, "x"))
-        else:
-            vars[k] = os.getenv(k, "error")
     return vars
