@@ -6,7 +6,7 @@ import requests
 from flask import render_template
 
 from config import (BASE_URL, CANDIDATE_INFO_TABLE, DATA_COLUMNS, IE_TABLE,
-                    LATE_CONTRIBUTIONS_TABLE, PAC_NAMES_TABLE)
+                    LATE_CONTRIBUTIONS_TABLE, PAC_NAMES_TABLE, GOV_URL_TEMPLATE)
 
 from .logger import logger
 from .utilities import (get_today, load_data, make_conn, query_api, query_db,
@@ -101,9 +101,21 @@ def update_late_contributions(**kwargs) -> pd.DataFrame:
 
     Takes some kwargs for backfilling.
     """
+    get_existing_late_contributions_db_data()
+
+    if isinstance(contributions, requests.models.Response):
+        contributions = contributions.json().get('results', [])
+    
     contributions = get_late_contributions(**kwargs)
-    f_contributions_etc = filter_and_format_late_contributions(contributions)
-    contributions_df = upload_and_send_late_contributions(*f_contributions_etc, trigger_email=kwargs.get('trigger_email', False))
+    filtered_contributions = filter_late_contributions(contributions)
+    formatted_etc = bulk_format_contributions(filtered_contributions)
+    formatted_contributions, pac_names_to_add, candidate_info_to_add = formatted_etc
+    contributions_df = upload_and_send_late_contributions(
+        formatted_contributions=formatted_contributions,
+        pac_names_to_add=pac_names_to_add,
+        candidate_info_to_add=candidate_info_to_add,
+        trigger_email=kwargs.get('trigger_email', False)
+    )
     return contributions_df
 
 
@@ -140,7 +152,7 @@ def get_late_contributions(**kwargs):
     return r
 
 
-def get_existing_late_contributions_db_data():
+def get_existing_late_contributions_db_data(return_data: bool = False):
     """
     Gets late contributions data from db.
 
@@ -160,6 +172,8 @@ def get_existing_late_contributions_db_data():
     late_contributions_df = pd.read_sql(
         f"""select fec_filing_id, transaction_id
         from {LATE_CONTRIBUTIONS_TABLE}""", conn)
+    if return_data:
+        return ie_df, pac_names_df, candidate_info_df, late_contributions_df
     return
 
 
@@ -242,58 +256,70 @@ def get_candidate_info(candidate_id: str) -> Tuple[Dict[Any, Any], bool]:
     return candidate_info, update
 
 
-def filter_and_format_late_contributions(contributions: List) -> Tuple[List, List, List]:
+def format_late_contributions(contribution):
     """
-    Filters out non-PAC contributions and contributions already in the "late_contributions" table.
-
-    Adds committee name and candidate info to all remaining contributions (for clarity)
-
-    Collects candidate info and committees that aren't already in db.
+    Adds committee name and candidate info to contribution (for clarity)
 
     Input:
-        contributions (list): list of results from PP late contributions endpoint.
+        contribution: results from PP late contributions endpoint
 
     Output:
-        formatted_contributions (list)
-        pac_names_to_add (list)
-        candidate_info_to_add (list)
+        contribution
+        name_to_update
+        candidate_info
     """
-    get_existing_late_contributions_db_data()
-    global late_contributions_df
+    contribution['html_url'] = GOV_URL_TEMPLATE.format(
+        contribution['fec_committee_id'], contribution['fec_filing_id'])
+    committee_name, update_name = get_committee_name(
+        contribution['fec_committee_id']
+        )
+    contribution['committee_name'] = committee_name
+    name_to_update = {
+            "fec_committee_id": contribution['fec_committee_id'],
+            "committee_name": committee_name
+        } if update_name else None
 
-    if isinstance(contributions, requests.models.Response):
-        contributions = contributions.json().get('results', [])
-    formatted_contributions = []
-    pac_names_to_add = []
-    candidate_info_to_add = []
-    url_template = "https://docquery.fec.gov/cgi-bin/forms/{}/{}/"
+    candidate_info, update_info = get_candidate_info(contribution['fec_candidate_id'])
+    contribution.update(candidate_info)
+    if update_info:
+        candidate_info['fec_candidate_id'] = contribution['fec_candidate_id']
+    
+    candidate_info_to_update = candidate_info if update_info else None
+    return contribution, name_to_update, candidate_info_to_update
+
+
+def filter_late_contributions(contributions):
+    """
+    Filters out non-PAC contributions and contributions already in the "late_contributions" table.
+    """
+    global late_contributions_df
     logger.debug("*** filtering new contributions")
-    contributions = [
+    filtered_contributions = [
         c for c in contributions
         if c['entity_type'] == "PAC"
         and [
             c['fec_filing_id'], c['transaction_id']
         ] not in late_contributions_df.values
     ]
-    for c in contributions:
-        c['html_url'] = url_template.format(
-            c['fec_committee_id'], c['fec_filing_id'])
-        committee_name, update_name = get_committee_name(c['fec_committee_id'])
-        c['committee_name'] = committee_name
-        if update_name:
-            pac_names_to_add.append({
-                "fec_committee_id": c['fec_committee_id'],
-                "committee_name": committee_name
-            })
+    return filtered_contributions
 
-        candidate_info, update_info = get_candidate_info(c['fec_candidate_id'])
-        c.update(candidate_info)
-        if update_info:
-            candidate_info['fec_candidate_id'] = c['fec_candidate_id']
-            candidate_info_to_add.append(candidate_info)
 
-        formatted_contributions.append(c)
-    logger.debug("*** new contributions formatted")
+def bulk_format_contributions(filtered_contributions):
+    """
+    Runs `format_late_contributions()` on a list of contributions.
+
+    I broke this out for easier testing.
+    """
+    formatted_contributions = []
+    pac_names_to_add = []
+    candidate_info_to_add = []
+    for c in filtered_contributions:
+        contribution, name_to_add, new_candidate_info = format_late_contributions(c)
+        if name_to_add:
+            pac_names_to_add.append(name_to_add)
+        if new_candidate_info:
+            candidate_info_to_add.append(new_candidate_info)
+        formatted_contributions.append(contribution)
     return formatted_contributions, pac_names_to_add, candidate_info_to_add
 
 

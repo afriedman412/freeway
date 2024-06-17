@@ -1,0 +1,79 @@
+[
+    {
+        "fec_candidate_id": "S4WV00332",
+        "candidate_name": "JAMES CONLEY II JUSTICE",
+        "state": "WV",
+        "office": "Senate",
+        "district": ""
+    },
+    {
+        "fec_candidate_id": "H4AL02188",
+        "candidate_name": "GREGORY ALBRITTON",
+        "state": "AL",
+        "office": "House",
+        "district": "2.0"
+    },
+    {
+        "fec_candidate_id": "H4IL12060",
+        "candidate_name": "MIKE BOST",
+        "state": "IL",
+        "office": "House",
+        "district": "12.0"
+    },
+    {
+        "fec_candidate_id": "H4CA47119",
+        "candidate_name": "Joanna Weiss",
+        "state": "CA",
+        "office": "House",
+        "district": "47.0"
+    },
+    {
+        "fec_candidate_id": "H4CA47085",
+        "candidate_name": "Dave Min",
+        "state": "CA",
+        "office": "House",
+        "district": "47.0"
+    },
+    {
+        "fec_candidate_id": "H4TX26149",
+        "candidate_name": "BRANDON GILL",
+        "state": "TX",
+        "office": "House",
+        "district": "26.0"
+    },
+    {
+        "fec_candidate_id": "H2NC05157",
+        "candidate_name": "ROBERT HINES",
+        "state": "NC",
+        "office": "House",
+        "district": "6.0"
+    },
+    {
+        "fec_candidate_id": "P60012465",
+        "candidate_name": "JR., JOSEPH R. BIDEN",
+        "state": "MI",
+        "office": "President",
+        "district": ""
+    },
+    {
+        "fec_candidate_id": "P80001571",
+        "candidate_name": "DONALD J. TRUMP",
+        "state": "SC",
+        "office": "President",
+        "district": ""
+    },
+    {
+        "fec_candidate_id": "S4CA00555",
+        "candidate_name": "ADAM SCHIFF",
+        "state": "CA",
+        "office": "Senate",
+        "district": ""
+    },
+    {
+        "fec_candidate_id": "H0OK05205",
+        "candidate_name": "Stephanie Bice",
+        "office": "house",
+        "state": "OK",
+        "district": "05"
+    }
+]

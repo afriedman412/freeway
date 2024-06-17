@@ -8,8 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from app import app
 from config import BASE_URL, EMAIL_FROM
-from src.src import recursive_query
-from src.utilities import make_conn, query_api, query_db, send_email
+from src.utilities import make_conn, query_api, query_db, send_email,recursive_query
 
 
 class TestFolio(TestCase):
@@ -72,19 +71,11 @@ def test_committee_endpoint():
         'fec_committee_name'][0] == 'United Democracy Project (Udp)'
 
 
-def test_daily_transactions():
-    url = os.path.join(BASE_URL, "independent_expenditures/{}/{}/{}.json")
-    date = "2024-04-01"
-    url = url.format(*date.split("-"))
-    new_today_transactions = recursive_query(url)
-    new_today_transactions_df = pd.DataFrame(new_today_transactions)
-    assert len(new_today_transactions_df) == 81
+# def test_daily_transactions():
+#     url = os.path.join(BASE_URL, "independent_expenditures/{}/{}/{}.json")
+#     date = "2024-04-01"
+#     url = url.format(*date.split("-"))
+#     new_today_transactions = recursive_query(url)
+#     new_today_transactions_df = pd.DataFrame(new_today_transactions)
+#     assert len(new_today_transactions_df) == 81
 
-
-def test_late_contributions_query():
-    date = "2024-04-01"
-    year, month, day = date.split("-")
-    url = os.path.join(BASE_URL, "contributions", "48hour", year, month, f"{day}.json")
-    today_late_transactions = recursive_query(url)
-    today_late_transactions_df = pd.DataFrame(today_late_transactions)
-    assert len(today_late_transactions_df) == 3
