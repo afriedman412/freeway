@@ -8,7 +8,8 @@ from sqlalchemy.exc import OperationalError
 
 from app import app
 from config import BASE_URL, EMAIL_FROM
-from src.utilities import make_conn, query_api, query_db, send_email,recursive_query
+from src.utilities import (make_conn, query_api, query_db, recursive_query,
+                           send_email)
 
 
 class TestFolio(TestCase):
@@ -78,4 +79,3 @@ def test_committee_endpoint():
 #     new_today_transactions = recursive_query(url)
 #     new_today_transactions_df = pd.DataFrame(new_today_transactions)
 #     assert len(new_today_transactions_df) == 81
-

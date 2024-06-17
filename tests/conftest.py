@@ -1,12 +1,12 @@
+import json
 import os
 
 import pandas as pd
 import pytest
-import json
 from sqlalchemy import text
 
-from src.utilities import make_conn
 from src.src import get_existing_late_contributions_db_data
+from src.utilities import make_conn
 
 TABLES = ['candidate_info', 'late_contributions', 'pac_names']
 TEST_FORMAT = "{}_testo"
@@ -18,12 +18,13 @@ os.environ["FLASK_ENV"] = "test"
 def testing_setup():
     assert os.getenv("FLASK_ENV") == 'test'
     make_test_tables()
-    
+
     global ie_df, pac_names_df, candidate_info_df, late_contributions_df
     ie_df, pac_names_df, candidate_info_df, late_contributions_df = get_existing_late_contributions_db_data(return_data=True)
-    
+
     yield
     teardown_test_tables()
+
 
 @pytest.fixture(scope="session", autouse=True)
 def test_contributions():
@@ -48,6 +49,6 @@ def teardown_test_tables():
             for t in TABLES:
                 ccc.execute(text(
                     f"DROP TABLE IF EXISTS {TEST_FORMAT.format(t)};"
-                    ))
+                ))
 
     conn.dispose()

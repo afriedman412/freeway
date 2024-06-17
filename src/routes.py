@@ -1,10 +1,11 @@
+import os
+
 import pandas as pd
-from flask import (Blueprint, Response, current_app, render_template, request,
-                   url_for, jsonify)
+from flask import (Blueprint, Response, current_app, jsonify, render_template,
+                   request, url_for)
 
 from config import IE_TABLE
 
-import os
 from .logger import logger
 from .src import (save_data, update_daily_transactions,
                   update_late_contributions)
@@ -34,7 +35,7 @@ def get_ies(date: str = None):
     if not date_ies:
         if custom_date:
             ie_message = \
-                f"No Independent Expenditures for {date}."  
+                f"No Independent Expenditures for {date}."
         else:
             f"No Independent Expenditures for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
@@ -42,7 +43,7 @@ def get_ies(date: str = None):
             f"select * from {IE_TABLE} order by dissemination_date desc limit 10")
         returned_transactions = False
     if custom_date:
-        ie_message = f"Independent Expenditures for {date}." 
+        ie_message = f"Independent Expenditures for {date}."
     else:
         ie_message = f"New Independent Expenditures for today ({date})!!"
     df = pd.DataFrame(date_ies)
@@ -182,7 +183,7 @@ def show_late_contributions(date: str = None) -> str:
         f"select * from late_contributions where contribution_date='{date}'")
     if not date_ies:
         if custom_date:
-            message = f"No Late Contributions for {date}."  
+            message = f"No Late Contributions for {date}."
         else:
             message = f"No Late Contributions for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
@@ -208,11 +209,12 @@ def show_late_contributions(date: str = None) -> str:
         df_html=df.to_html()
     )
 
+
 @main_routes.route('/env_test')
 def test_vars():
     vars = {}
     for k in os.environ:
-        if k in ['PRO_PUBLICA_API_KEY', 
+        if k in ['PRO_PUBLICA_API_KEY',
                  'SENDGRID_API_KEY',
                  'GOV_API_KEY',
                  'MYSQL_PW'

@@ -5,8 +5,9 @@ import pandas as pd
 import requests
 from flask import render_template
 
-from config import (BASE_URL, CANDIDATE_INFO_TABLE, DATA_COLUMNS, IE_TABLE,
-                    LATE_CONTRIBUTIONS_TABLE, PAC_NAMES_TABLE, GOV_URL_TEMPLATE)
+from config import (BASE_URL, CANDIDATE_INFO_TABLE, DATA_COLUMNS,
+                    GOV_URL_TEMPLATE, IE_TABLE, LATE_CONTRIBUTIONS_TABLE,
+                    PAC_NAMES_TABLE)
 
 from .logger import logger
 from .utilities import (get_today, load_data, make_conn, query_api, query_db,
@@ -105,7 +106,7 @@ def update_late_contributions(**kwargs) -> pd.DataFrame:
 
     if isinstance(contributions, requests.models.Response):
         contributions = contributions.json().get('results', [])
-    
+
     contributions = get_late_contributions(**kwargs)
     filtered_contributions = filter_late_contributions(contributions)
     formatted_etc = bulk_format_contributions(filtered_contributions)
@@ -132,9 +133,9 @@ def get_late_contributions(**kwargs):
         committee_id = kwargs['committee_id']
         logger.debug(f"getting late contributions for \
                         committee {committee_id}"
-        )
+                     )
         url = os.path.join(BASE_URL, "committees",
-                        kwargs['committe_id'], "48hour.json")
+                           kwargs['committe_id'], "48hour.json")
     elif kwargs.get("date"):
         date = kwargs['date']
         logger.debug(f"getting late contributions for date {date}")
@@ -272,18 +273,18 @@ def format_late_contributions(contribution):
         contribution['fec_committee_id'], contribution['fec_filing_id'])
     committee_name, update_name = get_committee_name(
         contribution['fec_committee_id']
-        )
+    )
     contribution['committee_name'] = committee_name
     name_to_update = {
-            "fec_committee_id": contribution['fec_committee_id'],
-            "committee_name": committee_name
-        } if update_name else None
+        "fec_committee_id": contribution['fec_committee_id'],
+        "committee_name": committee_name
+    } if update_name else None
 
     candidate_info, update_info = get_candidate_info(contribution['fec_candidate_id'])
     contribution.update(candidate_info)
     if update_info:
         candidate_info['fec_candidate_id'] = contribution['fec_candidate_id']
-    
+
     candidate_info_to_update = candidate_info if update_info else None
     return contribution, name_to_update, candidate_info_to_update
 
@@ -341,9 +342,9 @@ def upload_and_send_late_contributions(formatted_contributions,
     conn = make_conn()
     for data, table in zip(
         [formatted_contributions, pac_names_to_add, candidate_info_to_add],
-        ["late_contributions", "pac_names", "candidate_info"]
+        [LATE_CONTRIBUTIONS_TABLE, PAC_NAMES_TABLE, CANDIDATE_INFO_TABLE]
     ):
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(data).drop_duplicates()
         df.to_sql(table, conn, if_exists="append", index=False)
     contributions_df = pd.DataFrame(formatted_contributions)
     if trigger_email is True:

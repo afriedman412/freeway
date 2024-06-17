@@ -11,7 +11,7 @@ def generate_app() -> Flask:
     if not os.getenv("PRO_PUBLICA_API_KEY"):
         from dotenv import load_dotenv
         load_dotenv()
-    
+
     # assert os.getenv("PRO_PUBLICA_API_KEY") is not None
     app.secret_key = 'p33p33p00p00'
     return app

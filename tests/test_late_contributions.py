@@ -1,12 +1,18 @@
 import json
 import os
+
 import pandas as pd
-from config import CYCLE, PAC_NAMES_TABLE, BASE_URL
-from src.src import filter_late_contributions, bulk_format_contributions, get_late_contributions
+import pytest
+
+from config import BASE_URL, CYCLE, PAC_NAMES_TABLE
+from src.src import (bulk_format_contributions, filter_late_contributions,
+                     get_late_contributions,
+                     upload_and_send_late_contributions)
 
 
 def test_config():
     assert CYCLE == 2024
+
 
 def test_late_contributions_query():
     date = "2024-04-01"
@@ -16,6 +22,7 @@ def test_late_contributions_query():
     today_late_transactions = get_late_contributions(date=date)
     today_late_transactions_df = pd.DataFrame(today_late_transactions)
     assert len(today_late_transactions_df) == 3
+
 
 def test_add_candidate_info(test_contributions):
     filtered_contributions = filter_late_contributions(test_contributions)
@@ -38,3 +45,12 @@ def test_format_late_contributions(test_contributions):
 
     assert len(candidate_info_to_add) == 5
     assert sorted([c['candidate_name'] for c in candidate_info_to_add])[0] == 'DUSTY JOHNSON'
+
+    contributions_df = upload_and_send_late_contributions(
+        formatted_contributions=formatted_contributions,
+        pac_names_to_add=pac_names_to_add,
+        candidate_info_to_add=candidate_info_to_add,
+        trigger_email=False
+    )
+
+    assert contributions_df.shape == (8, 30)
