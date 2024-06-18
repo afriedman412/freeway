@@ -104,10 +104,10 @@ def update_late_contributions(**kwargs) -> pd.DataFrame:
     """
     get_existing_late_contributions_db_data()
 
+    contributions = get_late_contributions(**kwargs)
     if isinstance(contributions, requests.models.Response):
         contributions = contributions.json().get('results', [])
 
-    contributions = get_late_contributions(**kwargs)
     filtered_contributions = filter_late_contributions(contributions)
     formatted_etc = bulk_format_contributions(filtered_contributions)
     formatted_contributions, pac_names_to_add, candidate_info_to_add = formatted_etc

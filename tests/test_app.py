@@ -8,7 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from app import app
 from config import BASE_URL, EMAIL_FROM
-from src.utilities import (make_conn, query_api, query_db, recursive_query,
+from src.utilities import (make_conn, query_api, query_db,
                            send_email)
 
 
@@ -32,6 +32,17 @@ class TestFolio(TestCase):
             "/filings/date/2024-3-25"
         ]:
             endpoint_response = self.client.get(endpoint)
+            self.assert200(endpoint_response)
+
+    def test_update_endpoint(self):
+        for form_type in ['ie', 'late']:
+            endpoint_response = self.client.post(
+                f"/update/{form_type}",
+                data={
+                    'trigger_email': False,
+                    'password': "d00d00"
+                      }
+                )
             self.assert200(endpoint_response)
 
 
