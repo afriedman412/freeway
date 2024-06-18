@@ -9,7 +9,6 @@ from typing import Callable, List, Tuple, Union
 import pytz
 import requests
 import yaml
-from flask import current_app
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from sqlalchemy import create_engine, text

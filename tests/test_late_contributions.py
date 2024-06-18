@@ -1,10 +1,6 @@
-import json
-import os
-
 import pandas as pd
-import pytest
 
-from config import BASE_URL, CYCLE, PAC_NAMES_TABLE
+from config import CYCLE, PAC_NAMES_TABLE
 from src.src import (bulk_format_contributions, filter_late_contributions,
                      get_late_contributions,
                      upload_and_send_late_contributions)

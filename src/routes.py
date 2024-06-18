@@ -188,9 +188,9 @@ def show_late_contributions(date: str = None) -> str:
             message = f"No Late Contributions for today ({date})."
         logger.debug("No IEs for selected date, getting 10 most recent")
         date_ies = query_db(
-            """select * 
-            from late_contributions 
-            order by contribution_date desc 
+            """select *
+            from late_contributions
+            order by contribution_date desc
             limit 10""")
         returned_transactions = False
     if custom_date:

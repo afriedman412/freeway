@@ -348,10 +348,10 @@ def upload_and_send_late_contributions(formatted_contributions,
         df.to_sql(table, conn, if_exists="append", index=False)
     contributions_df = pd.DataFrame(formatted_contributions)
     if trigger_email is True:
+        # existing transactions are filtered in "filter_late_contributions"
         logger.debug("*** sending new late contributions email")
         send_email(
             f"New Late Contributions for {TODAY}!",
-            contributions_df.to_html(),
-            to_email="afriedman412@gmail.com"
+            contributions_df.to_html()
         )
     return contributions_df

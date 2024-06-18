@@ -41,4 +41,6 @@ tornado==6.4.1
 traitlets==5.14.3
 wcwidth==0.2.13
 Werkzeug==3.0.3
-pytest-dependency=0.6.0
+pytest-dependency==0.6.0
+flake8==7.1.0
+mypy==1.10.0

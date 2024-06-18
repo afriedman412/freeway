@@ -8,8 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from app import app
 from config import BASE_URL, EMAIL_FROM
-from src.utilities import (make_conn, query_api, query_db,
-                           send_email)
+from src.utilities import make_conn, query_api, query_db, send_email
 
 
 class TestFolio(TestCase):
@@ -41,8 +40,8 @@ class TestFolio(TestCase):
                 data={
                     'trigger_email': False,
                     'password': "d00d00"
-                      }
-                )
+                }
+            )
             self.assert200(endpoint_response)
 
 
