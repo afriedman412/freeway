@@ -78,7 +78,7 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
         return [r for r in results if r['unique_id'] not in existing_ids]
 
     url = url.format(*date.split("-"))
-    new_today_transactions = recursive_query(url, filter=filter_on_ids)
+    new_today_transactions = recursive_query(url, filter_func=filter_on_ids)
     new_today_transactions_df = pd.DataFrame(new_today_transactions)
     if len(new_today_transactions_df) > 0:
         engine = make_conn()
@@ -239,7 +239,7 @@ def get_candidate_info(candidate_id: str) -> Tuple[Dict[Any, Any], bool]:
         except IndexError:
             url = os.path.join(BASE_URL, 'candidates', candidate_id) + ".json"
             r = query_api(url)
-            try:  # work around split error
+            try:  # TODO: work around split error
                 _, _, state, office, district = r.json(
                 )['results'][0]['district'].split("/")
                 district = district.replace(".json", "")

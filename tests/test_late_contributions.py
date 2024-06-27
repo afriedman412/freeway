@@ -3,7 +3,8 @@ import pandas as pd
 from config import CYCLE, PAC_NAMES_TABLE
 from src.src import (bulk_format_contributions, filter_late_contributions,
                      get_late_contributions,
-                     upload_and_send_late_contributions)
+                     upload_and_send_late_contributions,
+                     get_existing_late_contributions_db_data)
 
 
 def test_config():
@@ -50,3 +51,10 @@ def test_format_late_contributions(test_contributions):
     )
 
     assert contributions_df.shape == (8, 30)
+
+
+def test_filtering(test_contributions):
+    global ie_df, pac_names_df, candidate_info_df, late_contributions_df
+    ie_df, pac_names_df, candidate_info_df, late_contributions_df = get_existing_late_contributions_db_data(return_data=True)
+    filtered_contributions = filter_late_contributions(test_contributions)
+    assert len(filtered_contributions) == 0

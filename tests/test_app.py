@@ -7,8 +7,8 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 
 from app import app
-from config import BASE_URL, EMAIL_FROM
-from src.utilities import make_conn, query_api, query_db, send_email
+from config import BASE_URL, EMAIL_FROM, IE_TABLE
+from src.utilities import make_conn, query_api, query_db, send_email, recursive_query
 
 
 class TestFolio(TestCase):
@@ -82,10 +82,23 @@ def test_committee_endpoint():
         'fec_committee_name'][0] == 'United Democracy Project (Udp)'
 
 
-# def test_daily_transactions():
-#     url = os.path.join(BASE_URL, "independent_expenditures/{}/{}/{}.json")
-#     date = "2024-04-01"
-#     url = url.format(*date.split("-"))
-#     new_today_transactions = recursive_query(url)
-#     new_today_transactions_df = pd.DataFrame(new_today_transactions)
-#     assert len(new_today_transactions_df) == 81
+def test_daily_transaction_filtering():
+    existing_ids = [
+        i[0]
+        for i in
+        query_db(
+            f"select distinct unique_id from {IE_TABLE}"
+        )]
+
+    def filter_on_ids(results):
+        return [r for r in results if r['unique_id'] not in existing_ids]
+
+    # this date isn't special, it's just data that should already be in the db
+    date = "2023-01-05"
+    url = os.path.join(BASE_URL, "independent_expenditures/{}/{}/{}.json")
+
+    url = url.format(*date.split("-"))
+    new_today_transactions = recursive_query(url)
+    assert len(new_today_transactions) == 12
+    new_today_transactions = recursive_query(url, filter_func=filter_on_ids)
+    assert len(new_today_transactions) == 0

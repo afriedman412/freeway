@@ -5,6 +5,7 @@ from flask import (Blueprint, Response, current_app, jsonify, render_template,
                    request, url_for)
 
 from config import IE_TABLE
+import json
 
 from .logger import logger
 from .src import (save_data, update_daily_transactions,
@@ -93,14 +94,17 @@ def update_forms(form_type: str):
     else:
         return f"bad form type: ('{form_type}')"
     if request.form.get("password") == 'd00d00':
-        trigger_email = request.form.get('send_email', False)
+        trigger_email = request.form.get('send_email', True)
         new_data = func(trigger_email=trigger_email)
         data_dict = {
             'form_type': form_type,
             'trigger_email': trigger_email,
             'transactions': new_data.to_dict('records')
         }
-        return jsonify(data_dict)
+        logger.debug(f"*** UPDATED {form_type} DATA with {len(new_data)} RECORDS")
+        if trigger_email:
+            logger.debug("*** EMAIL SENT")
+        jsonify(data_dict)
     else:
         "bad password!"
 

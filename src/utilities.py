@@ -120,7 +120,7 @@ def recursive_query(
         increment: int = 20,
         api_type: str = 'p',
         limit: int = None,
-        filter: Callable = None,
+        filter_func: Callable = None,
         params: dict = {}
 ):
     """
@@ -148,8 +148,8 @@ def recursive_query(
             try:
                 results = r.json().get('results')
                 if results:
-                    if filter and filter(results):
-                        results = filter(results)
+                    if filter_func:
+                        results = filter_func(results)
                     bucket += results
                     if limit and len(bucket) > limit:
                         break
