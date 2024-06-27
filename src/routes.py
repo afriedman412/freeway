@@ -102,11 +102,11 @@ def update_forms(form_type: str):
             'transactions': new_data.to_dict('records')
         }
         logger.debug(f"*** UPDATED {form_type} DATA with {len(new_data)} RECORDS")
-        if trigger_email:
+        if trigger_email and len(new_data) > 0:
             logger.debug("*** EMAIL SENT")
-        jsonify(data_dict)
+        return jsonify(data_dict)
     else:
-        "bad password!"
+        return "bad password!"
 
 
 @main_routes.route("/download", methods=['POST'])
