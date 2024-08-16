@@ -86,7 +86,7 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
             IE_TABLE, con=engine, if_exists="append")
         if trigger_email:
             send_email(
-                f"New Independent Expenditures for {TODAY}!",
+                f"New Independent Expenditures for {TODAY} from the Freeway service!",
                 new_today_transactions_df[DATA_COLUMNS].to_html()
             )
     return new_today_transactions_df
@@ -351,7 +351,7 @@ def upload_and_send_late_contributions(formatted_contributions,
         # existing transactions are filtered in "filter_late_contributions"
         logger.debug("*** sending new late contributions email")
         send_email(
-            f"New Late Contributions for {TODAY}!",
+            f"New Late Contributions for {TODAY} from the Freeway service!",
             contributions_df.to_html()
         )
     return contributions_df
