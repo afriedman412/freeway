@@ -31,7 +31,7 @@ DATA_COLUMNS = [
     'transaction_id'
 ]
 
-IE_TABLE = "fiu_pp"
+IE_TABLE = "independent_expenditures"
 LATE_CONTRIBUTIONS_TABLE = "late_contributions"
 PAC_NAMES_TABLE = "pac_names"
 CANDIDATE_INFO_TABLE = "candidate_info"

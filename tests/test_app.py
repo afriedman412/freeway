@@ -42,7 +42,7 @@ class TestFolio(TestCase):
                     'password': "d00d00"
                 }
             )
-            self.assert200(endpoint_response)
+            self.assert200(endpoint_response, f"bad endpoint response for {form_type}: {endpoint_response}")
 
 
 def test_create_engine_success():
@@ -76,7 +76,7 @@ def test_pp_query():
 def test_committee_endpoint():
     committee_id = 'C00799031'
     committee_ies = query_db(
-        f"select * from fiu_pp where fec_committee_id='{committee_id}'")
+        f"select * from {IE_TABLE} where fec_committee_id='{committee_id}'")
     assert len(committee_ies) > 0
     assert pd.DataFrame(committee_ies)[
         'fec_committee_name'][0] == 'United Democracy Project (Udp)'

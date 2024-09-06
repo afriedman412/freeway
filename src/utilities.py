@@ -5,7 +5,7 @@ import os
 from datetime import datetime as dt
 from time import sleep
 from typing import Callable, List, Tuple, Union
-
+from retrying import retry
 import pytz
 import requests
 import yaml
@@ -60,7 +60,7 @@ def query_db(q: str) -> List[Tuple]:
     engine.dispose()
     return output
 
-
+@retry(wait_fixed=3000, stop_max_attempt_number=7)
 def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20, **params) -> requests.Response:
     """
     Get data from the Pro Publica or FEC APIs.

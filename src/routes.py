@@ -5,7 +5,6 @@ from flask import (Blueprint, Response, current_app, jsonify, render_template,
                    request, url_for)
 
 from config import IE_TABLE
-import json
 
 from .logger import logger
 from .src import (save_data, update_daily_transactions,
@@ -66,7 +65,7 @@ def get_committee_ies(committee_id: str):
     df = pd.DataFrame()
     committee_name = None
     committee_ies = query_db(
-        f"select * from fiu_pp where fec_committee_id='{committee_id}'")
+        f"select * from {IE_TABLE} where fec_committee_id='{committee_id}'")
     if committee_ies:
         df = pd.DataFrame(committee_ies)
         committee_name

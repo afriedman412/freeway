@@ -49,6 +49,7 @@ def save_data(data: pd.DataFrame):
     """
     conn = make_conn()
     data.to_sql("temp", conn, if_exists='replace')
+    conn.dispose()
     return
 
 
@@ -89,12 +90,13 @@ def update_daily_transactions(date: str = None, trigger_email: bool = True) -> L
                 f"New Independent Expenditures for {TODAY} from the Freeway service!",
                 new_today_transactions_df[DATA_COLUMNS].to_html()
             )
+        engine.dispose()
     return new_today_transactions_df
 
 
 def update_late_contributions(**kwargs) -> pd.DataFrame:
     """
-    Gets late contributions from today
+    Gets late contributions (from today, by default)
     Filters out non-PAC and old contributions
     Adds committee name and candidate info
     Writes contributions and any new committee and candidate info to db
@@ -123,6 +125,12 @@ def update_late_contributions(**kwargs) -> pd.DataFrame:
 def get_late_contributions(**kwargs):
     """
     Queries ProPublica "late contributions" endpoints, depending on what param you pass.
+
+    Possible kwargs:
+        candidate_id (str)
+        committee_id (str)
+        date (str)
+        return_url (bool)
     """
     if kwargs.get('candidate_id'):
         candidate_id = kwargs['candidate_id']
@@ -155,7 +163,7 @@ def get_late_contributions(**kwargs):
 
 def get_existing_late_contributions_db_data(return_data: bool = False):
     """
-    Gets late contributions data from db.
+    Gets late contributions data from db and assigns them to global variables.
 
     Used to get committee names and candidate info to fill out late contribution results
 
@@ -164,7 +172,7 @@ def get_existing_late_contributions_db_data(return_data: bool = False):
     global ie_df, pac_names_df, candidate_info_df, late_contributions_df
     conn = make_conn()
     ie_df = pd.read_sql(
-        "select fec_candidate_id, candidate_name, office, state, district, fec_committee_id, fec_committee_name from fiu_pp",
+        f"select fec_candidate_id, candidate_name, office, state, district, fec_committee_id, fec_committee_name from {IE_TABLE}",
         conn)
     ie_df.drop_duplicates(inplace=True)
     pac_names_df = pd.read_sql(f"select * from {PAC_NAMES_TABLE}", conn)
@@ -173,6 +181,7 @@ def get_existing_late_contributions_db_data(return_data: bool = False):
     late_contributions_df = pd.read_sql(
         f"""select fec_filing_id, transaction_id
         from {LATE_CONTRIBUTIONS_TABLE}""", conn)
+    conn.dispose()
     if return_data:
         return ie_df, pac_names_df, candidate_info_df, late_contributions_df
     return
@@ -244,7 +253,7 @@ def get_candidate_info(candidate_id: str) -> Tuple[Dict[Any, Any], bool]:
                 )['results'][0]['district'].split("/")
                 district = district.replace(".json", "")
                 name = r.json()['results'][0]['display_name']
-            except (KeyError, ValueError):
+            except (KeyError, ValueError, AttributeError):
                 name, state, office, district = ("QE", None, None, None)
             candidate_info = dict(zip(
                 ['fec_candidate_id', 'candidate_name',
@@ -347,7 +356,7 @@ def upload_and_send_late_contributions(formatted_contributions,
         df = pd.DataFrame(data).drop_duplicates()
         df.to_sql(table, conn, if_exists="append", index=False)
     contributions_df = pd.DataFrame(formatted_contributions)
-    if trigger_email is True and len(format_late_contributions) > 0:
+    if trigger_email is True and len(contributions_df) > 0:
         # existing transactions are filtered in "filter_late_contributions"
         logger.debug("*** sending new late contributions email")
         send_email(
