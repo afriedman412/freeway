@@ -60,6 +60,7 @@ def query_db(q: str) -> List[Tuple]:
     engine.dispose()
     return output
 
+
 @retry(wait_fixed=3000, stop_max_attempt_number=7)
 def query_api(url: str, api_type: str = 'p', offset: int = 0, per_page: int = 20, **params) -> requests.Response:
     """

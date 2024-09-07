@@ -31,21 +31,26 @@ def get_schedule_a(comittee_id: str):
 
 
 @api_routes.route("/late")
-@api_routes.route("/late/<date_cutoff>")
-def get_late_contributions_endpoint(date_cutoff: str = None):
+@api_routes.route("/late/<date>")
+def get_late_contributions_endpoint(date: str = None):
     """
     Get "late contribution" forms from the Pro Publica API (24/48 hour forms)
 
     IEs show up here often before they show up as IE data, so this is better for reporting.
 
     These are filtered -- only PAC contributions from CYCLE show up!
+
+    # TODO: this only gets the specific day, not UP TO THAT DAY ... ie its not a date cutoff
     """
-    data = get_late_contributions(date_cutoff)
+    if date is None:
+        data = get_late_contributions()
+    else:
+        data = get_late_contributions(date=date)
     save_data(pd.DataFrame(data))
     return render_template(
         "index.html",
         df_html=pd.DataFrame(data).to_html(),
-        params={"title": f"Late Contributions up to {date_cutoff}"}
+        params={"title": f"Late Contributions up to {date}"}
     )
 
 
